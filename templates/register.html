@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Veteran Lawns & Landscapes{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create Account</h2>
+        <form id="registerForm" class="auth-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="8">
+                <small>Min 8 characters, include uppercase, lowercase, and number</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display:none;"></div>
+
+            <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+
+        <p class="auth-link">Already have an account? <a href="/login">Login here</a></p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorEl = document.getElementById('errorMessage');
+
+    if (password !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    const formData = {
+        email: document.getElementById('email').value,
+        password: password
+    };
+
+    try {
+        const response = await fetch('/auth/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            // Auto-login after registration
+            const loginData = new URLSearchParams();
+            loginData.append('username', formData.email);
+            loginData.append('password', formData.password);
+
+            const loginResponse = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: loginData
+            });
+
+            if (loginResponse.ok) {
+                const result = await loginResponse.json();
+                localStorage.setItem('token', result.access_token);
+                window.location.href = '/dashboard';
+            }
+        } else {
+            const error = await response.json();
+            let message = error.detail;
+            if (Array.isArray(error.detail)) {
+                message = error.detail.map(d => d.msg).join(', ');
+            }
+            errorEl.textContent = message || 'Registration failed';
+            errorEl.style.display = 'block';
+        }
+    } catch (err) {
+        alert('Error connecting to server');
+        console.error(err);
+    }
+});
+</script>
+{% endblock %}

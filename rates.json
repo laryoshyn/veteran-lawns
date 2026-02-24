@@ -1,0 +1,33 @@
+{
+  "tiers": [
+    {
+      "label": "Below 1/2 Acre",
+      "min_acres": 0,
+      "max_acres": 0.5,
+      "price": 215.00,
+      "quote_required": false
+    },
+    {
+      "label": "1/2 – 1 Acre",
+      "min_acres": 0.5,
+      "max_acres": 1.0,
+      "price": 230.00,
+      "quote_required": false
+    },
+    {
+      "label": "1 – 1½ Acres",
+      "min_acres": 1.0,
+      "max_acres": 1.5,
+      "price": 315.00,
+      "quote_required": false
+    },
+    {
+      "label": "1½ Acres & Above",
+      "min_acres": 1.5,
+      "max_acres": null,
+      "price": null,
+      "quote_required": true
+    }
+  ],
+  "last_updated": "2026-02-23"
+}

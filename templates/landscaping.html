@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Landscaping Services - Veteran Lawns & Landscapes{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero hero-landscaping">
+    <div class="hero-inner">
+        <div class="hero-content">
+            <div class="hero-badge">Custom Projects</div>
+            <h1>Transform Your Outdoor Space</h1>
+            <p>From patios to gardens, we bring your vision to life. Get a free consultation today.</p>
+            <a href="#landscaping-form" class="btn btn-hero">Start Your Project</a>
+        </div>
+        <div class="hero-image">
+            <img src="/images/3.png" alt="Professional landscaping services" loading="eager">
+        </div>
+    </div>
+</section>
+
+<!-- Landscaping Form Section -->
+<section class="quote-section" id="landscaping-form">
+    <div class="section-header">
+        <h2>Request a Free Consultation</h2>
+        <p>Tell us about your project and we'll schedule a PM visit</p>
+    </div>
+
+    <div class="quote-container">
+        <div class="quote-form-wrapper">
+            <form id="landscapingForm" class="quote-form">
+                <!-- Contact Info -->
+                <h3 class="form-section-title">Contact Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="john@example.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="street_address">Street Address *</label>
+                    <input type="text" id="street_address" name="street_address" required placeholder="123 Main Street">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <input type="text" id="city" name="city" value="Bel Air" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="zipcode">ZIP Code *</label>
+                        <input type="text" id="zipcode" name="zipcode" pattern="^\d{5}(-\d{4})?$" required placeholder="21014">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="(410) 555-1234">
+                </div>
+
+                <!-- Project Details -->
+                <h3 class="form-section-title">Project Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project_type">Project Type *</label>
+                        <select id="project_type" name="project_type" required>
+                            <option value="">Select type...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="project_scope">Project Scope *</label>
+                        <select id="project_scope" name="project_scope" required>
+                            <option value="">Select scope...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget_range">Budget Range (Optional)</label>
+                        <select id="budget_range" name="budget_range">
+                            <option value="">Select budget...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="timeline_preference">Preferred Timeline (Optional)</label>
+                        <select id="timeline_preference" name="timeline_preference">
+                            <option value="">Select timeline...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="design_preference">Design Preference (Optional)</label>
+                    <input type="text" id="design_preference" name="design_preference" placeholder="e.g., Modern, Traditional, Natural">
+                </div>
+
+                <div class="form-group">
+                    <label for="project_description">Project Description (Optional)</label>
+                    <textarea id="project_description" name="project_description" rows="4" placeholder="Describe your vision for the project..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-large" id="submitBtn">
+                    <span id="btnText">Request Free Consultation</span>
+                    <span id="btnLoader" class="loader" style="display:none;"></span>
+                </button>
+            </form>
+
+            <!-- Success Result -->
+            <div id="inquiryResult" class="quote-result" style="display:none;">
+                <div class="result-header">
+                    <span class="result-icon">&#10003;</span>
+                    <h3>Consultation Request Received!</h3>
+                </div>
+                <div class="result-body">
+                    <p class="result-message">Thank you for your interest in our landscaping services. A Project Manager will contact you within 24 hours to schedule your free on-site consultation.</p>
+                    <div class="result-next-steps">
+                        <h4>What's Next?</h4>
+                        <ol>
+                            <li>PM will contact you to schedule a site visit</li>
+                            <li>On-site consultation to assess your project</li>
+                            <li>Receive your custom T&M proposal</li>
+                            <li>Approve and we start your project!</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <a href="tel:+14105551234" class="btn btn-success btn-large">Call Now: (410) 555-1234</a>
+                    <a href="/" class="btn btn-outline">Back to Home</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quote-sidebar">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Why Choose Us?</h3>
+                </div>
+                <ul class="pricing-features">
+                    <li><span class="check">&#10003;</span> Free on-site consultation</li>
+                    <li><span class="check">&#10003;</span> Detailed project requirements</li>
+                    <li><span class="check">&#10003;</span> Transparent T&M pricing</li>
+                    <li><span class="check">&#10003;</span> Quality materials</li>
+                    <li><span class="check">&#10003;</span> Licensed & insured</li>
+                    <li><span class="check">&#10003;</span> Veteran owned</li>
+                </ul>
+            </div>
+
+            <div class="guarantee-box">
+                <div class="guarantee-icon">&#128736;</div>
+                <h4>Professional Project Management</h4>
+                <p>Every project is overseen by an experienced PM to ensure quality and timely completion.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Grid -->
+<section class="services-section">
+    <div class="section-header">
+        <h2>Landscaping Services</h2>
+        <p>Comprehensive outdoor transformation solutions</p>
+    </div>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon">&#127961;</div>
+            <h3>Hardscape</h3>
+            <p>Patios, walkways, retaining walls, and outdoor living spaces.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#127803;</div>
+            <h3>Softscape</h3>
+            <p>Planting, gardens, lawn installation, and natural landscaping.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#128167;</div>
+            <h3>Drainage</h3>
+            <p>French drains, grading, and water management solutions.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#127754;</div>
+            <h3>Irrigation</h3>
+            <p>Sprinkler systems, drip irrigation, and smart controllers.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <h2>Ready to Transform Your Property?</h2>
+    <p>Get started with a free consultation today</p>
+    <a href="#landscaping-form" class="btn btn-hero">Request Consultation</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load dropdown options on page load
+async function loadOptions() {
+    try {
+        const response = await fetch('/landscaping/options');
+        if (response.ok) {
+            const options = await response.json();
+
+            // Populate project types
+            const typeSelect = document.getElementById('project_type');
+            options.project_types.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                typeSelect.appendChild(option);
+            });
+
+            // Populate project scopes
+            const scopeSelect = document.getElementById('project_scope');
+            options.project_scopes.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                scopeSelect.appendChild(option);
+            });
+
+            // Populate budget ranges
+            const budgetSelect = document.getElementById('budget_range');
+            options.budget_ranges.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                budgetSelect.appendChild(option);
+            });
+
+            // Populate timeline preferences
+            const timelineSelect = document.getElementById('timeline_preference');
+            options.timeline_preferences.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                timelineSelect.appendChild(option);
+            });
+        }
+    } catch (err) {
+        console.error('Failed to load options:', err);
+    }
+}
+
+loadOptions();
+
+// Form submission
+document.getElementById('landscapingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+
+    // Show loading state
+    submitBtn.disabled = true;
+    btnText.textContent = 'Submitting...';
+    btnLoader.style.display = 'inline-block';
+
+    const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        street_address: document.getElementById('street_address').value,
+        city: document.getElementById('city').value,
+        zipcode: document.getElementById('zipcode').value,
+        phone: document.getElementById('phone').value,
+        project_type: document.getElementById('project_type').value,
+        project_scope: document.getElementById('project_scope').value,
+        budget_range: document.getElementById('budget_range').value || null,
+        timeline_preference: document.getElementById('timeline_preference').value || null,
+        design_preference: document.getElementById('design_preference').value || null,
+        project_description: document.getElementById('project_description').value || null
+    };
+
+    try {
+        const response = await fetch('/landscaping/inquiry', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            // Hide form, show result
+            document.getElementById('landscapingForm').style.display = 'none';
+            document.getElementById('inquiryResult').style.display = 'block';
+
+            // Scroll to result
+            document.getElementById('inquiryResult').scrollIntoView({behavior: 'smooth', block: 'center'});
+        } else {
+            const error = await response.json();
+            let message = 'Failed to submit inquiry. Please try again.';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    message = error.detail.map(d => d.msg).join('\n');
+                } else {
+                    message = error.detail;
+                }
+            }
+            alert(message);
+        }
+    } catch (err) {
+        alert('Connection error. Please check your internet and try again.');
+        console.error(err);
+    } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        btnText.textContent = 'Request Free Consultation';
+        btnLoader.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

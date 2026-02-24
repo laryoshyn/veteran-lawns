@@ -1,0 +1,472 @@
+/* ==========================================================================
+   ADMIN PANEL — SIDEBAR LAYOUT
+   Full-screen dashboard separate from the main site layout.
+   Loaded only on /admin — overrides style.css where needed.
+   ========================================================================== */
+
+/* Remove body texture & standard page flow */
+body.admin-body {
+    display: flex;
+    min-height: 100vh;
+    background: #f0f2f5;
+    overflow: hidden;
+}
+
+body.admin-body::before {
+    display: none;
+}
+
+/* ==========================================================================
+   SIDEBAR
+   ========================================================================== */
+.admin-sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--forest-deep);
+    color: var(--cream);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    z-index: 200;
+    transition: width 0.3s var(--ease-out), min-width 0.3s var(--ease-out);
+    scrollbar-width: none;
+}
+
+.admin-sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Collapsed: icon-only mode on desktop */
+.admin-sidebar.collapsed {
+    width: 64px;
+    min-width: 64px;
+}
+
+.admin-sidebar.collapsed .sidebar-brand-name,
+.admin-sidebar.collapsed .sidebar-brand-sub {
+    display: none;
+}
+
+/* Collapse hides text inside sidebar links */
+.admin-sidebar.collapsed .sidebar-link {
+    justify-content: center;
+    padding: 0.75rem;
+}
+
+.admin-sidebar.collapsed .sidebar-link > span:not(.sidebar-icon) {
+    display: none;
+}
+
+.admin-sidebar.collapsed .sidebar-footer .sidebar-link > span:not(:first-child) {
+    display: none;
+}
+
+/* ----- Brand Area ----- */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-bottom: 1px solid rgba(250, 247, 242, 0.1);
+    flex-shrink: 0;
+}
+
+.sidebar-brand-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    color: var(--wheat);
+    line-height: 1;
+}
+
+.sidebar-brand-name {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.sidebar-brand-sub {
+    font-size: 0.68rem;
+    color: var(--wheat-light);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.75;
+    white-space: nowrap;
+}
+
+/* ----- Nav Links ----- */
+.sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1.25rem;
+    color: rgba(250, 247, 242, 0.65);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-link:hover {
+    background: rgba(250, 247, 242, 0.07);
+    color: var(--cream);
+    border-left-color: rgba(212, 168, 75, 0.4);
+}
+
+.sidebar-link.active {
+    background: rgba(212, 168, 75, 0.12);
+    color: var(--wheat-light);
+    border-left-color: var(--wheat);
+    font-weight: 600;
+}
+
+.sidebar-icon {
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    width: 22px;
+    text-align: center;
+    line-height: 1;
+}
+
+/* ----- Sidebar Footer ----- */
+.sidebar-footer {
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(250, 247, 242, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   MAIN CONTENT AREA
+   ========================================================================== */
+.admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+/* ==========================================================================
+   TOP BAR
+   ========================================================================== */
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid var(--cream-dark);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(27, 58, 47, 0.05);
+    flex-shrink: 0;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--stone);
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+    background: var(--cream);
+    color: var(--forest);
+}
+
+.topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: var(--forest);
+    margin: 0;
+    flex: 1;
+    font-weight: 700;
+}
+
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    color: var(--stone);
+    flex-shrink: 0;
+}
+
+.admin-badge {
+    background: var(--wheat);
+    color: var(--forest-deep);
+    padding: 0.2rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   ADMIN SECTIONS (show/hide) — overrides style.css .admin-section card style
+   ========================================================================== */
+.admin-section {
+    display: none;
+    padding: 1.5rem;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    max-width: none;
+    flex: 1;
+}
+
+.admin-section.active {
+    display: block;
+}
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.section-header-row h2 {
+    font-size: 1.4rem;
+    color: var(--forest);
+    margin: 0;
+}
+
+/* ==========================================================================
+   STATS GRID
+   ========================================================================== */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.astat-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid var(--forest);
+    transition: transform 0.2s var(--ease-out), box-shadow 0.2s;
+}
+
+.astat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.astat-card.astat-green {
+    border-left-color: var(--meadow);
+}
+
+.astat-card.astat-gold {
+    border-left-color: var(--wheat);
+}
+
+.astat-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.2rem;
+    line-height: 1;
+}
+
+.astat-value {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1;
+}
+
+.astat-label {
+    font-size: 0.75rem;
+    color: var(--stone-light);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   OVERVIEW GRID
+   ========================================================================== */
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+}
+
+.overview-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.overview-card h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--cream-dark);
+    color: var(--forest);
+}
+
+/* Recent Quotes rows */
+.recent-quote-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--cream-dark);
+    gap: 0.75rem;
+}
+
+.recent-quote-row:last-child {
+    border-bottom: none;
+}
+
+.rq-address {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--stone-light);
+    margin-top: 0.15rem;
+}
+
+/* Quick Links */
+.quick-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ql-btn {
+    width: 100%;
+    text-align: left;
+    padding: 0.7rem 1rem;
+    background: var(--cream);
+    border: 1px solid var(--cream-dark);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--forest);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+}
+
+.ql-btn:hover {
+    background: var(--forest);
+    color: white;
+    border-color: var(--forest);
+    transform: translateX(3px);
+}
+
+/* ==========================================================================
+   RESPONSIVE — Tablet (sidebar collapses off-screen)
+   ========================================================================== */
+@media (max-width: 900px) {
+    /* Sidebar slides off-screen when collapsed on mobile */
+    .admin-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 300;
+        box-shadow: var(--shadow-lg);
+        /* Start visible */
+    }
+
+    .admin-sidebar.collapsed {
+        transform: translateX(-100%);
+        width: 240px;
+        min-width: 240px;
+    }
+
+    .admin-main {
+        width: 100%;
+    }
+
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .admin-topbar {
+        padding: 0.75rem 1rem;
+    }
+
+    .topbar-user span:not(.admin-badge) {
+        display: none;
+    }
+
+    .admin-section {
+        padding: 1rem;
+    }
+
+    .section-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .astat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

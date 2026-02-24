@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard - Veteran Lawns & Landscapes{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-welcome">
+        <div>
+            <h1>Welcome back, <span id="userFirstName">there</span></h1>
+            <p class="welcome-sub" id="userEmail"></p>
+        </div>
+        <div class="dashboard-actions">
+            <a href="/" class="btn btn-primary">Get New Quote</a>
+            <a href="/landscaping" class="btn btn-outline">Landscaping</a>
+        </div>
+    </div>
+
+    <!-- My Quotes -->
+    <div class="dashboard-section">
+        <h2>My Quotes</h2>
+        <div id="quotesContainer">
+            <p class="loading">Loading quotes...</p>
+        </div>
+    </div>
+
+    <!-- Service Calendar -->
+    <div class="dashboard-section">
+        <h2>My Service Schedule</h2>
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button class="btn btn-outline btn-sm" id="prevMonth">&larr; Prev</button>
+                <h3 id="calendarTitle">Loading...</h3>
+                <button class="btn btn-outline btn-sm" id="nextMonth">Next &rarr;</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <div class="calendar-day-header">Sun</div>
+                <div class="calendar-day-header">Mon</div>
+                <div class="calendar-day-header">Tue</div>
+                <div class="calendar-day-header">Wed</div>
+                <div class="calendar-day-header">Thu</div>
+                <div class="calendar-day-header">Fri</div>
+                <div class="calendar-day-header">Sat</div>
+            </div>
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-dot legend-service"></span> Scheduled Service</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadDashboard() {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+    const headers = {'Authorization': `Bearer ${token}`};
+
+    try {
+        const userRes = await fetch('/auth/me', {headers});
+        if (!userRes.ok) { localStorage.removeItem('token'); window.location.href = '/login'; return; }
+        const user = await userRes.json();
+
+        // Redirect admins to admin panel
+        if (user.role === 'admin') { window.location.href = '/admin'; return; }
+
+        document.getElementById('userEmail').textContent = user.email;
+        const firstName = user.email.split('@')[0];
+        document.getElementById('userFirstName').textContent = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+
+        const quotesRes = await fetch('/dashboard/my-quotes', {headers});
+        const quotes = await quotesRes.json();
+        displayQuotes(quotes);
+        loadUserCalendar();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('quotesContainer').innerHTML = '<p class="error">Error loading data</p>';
+    }
+}
+
+function displayQuotes(quotes) {
+    const container = document.getElementById('quotesContainer');
+    if (quotes.length === 0) {
+        container.innerHTML = '<p class="empty">No quotes yet. <a href="/">Get your first quote!</a></p>';
+        return;
+    }
+    container.innerHTML = quotes.map(q => `
+        <div class="quote-card ${q.purchased ? 'purchased' : ''}">
+            <div class="quote-header">
+                <span class="quote-name">${q.name}</span>
+                <span class="quote-status ${q.purchased ? 'status-purchased' : 'status-pending'}">
+                    ${q.purchased ? 'Purchased' : 'Pending'}
+                </span>
+            </div>
+            <div class="quote-body">
+                <p><strong>Address:</strong> ${q.address}</p>
+                <p><strong>Phone:</strong> ${q.phone}</p>
+                <p><strong>Size:</strong> ${q.actual_size} acres</p>
+                <p><strong>Quote:</strong> ${q.quote > 0 ? '$' + q.quote.toFixed(2) + '/month' : 'Quote Required'}</p>
+                <p class="quote-date">Created: ${new Date(q.created_at).toLocaleDateString()}</p>
+                ${q.service_start_date ? `
+                    <div class="service-info">
+                        <p><strong>Service Start:</strong> ${new Date(q.service_start_date + 'T00:00:00').toLocaleDateString()}</p>
+                        <p><strong>Frequency:</strong> ${q.service_frequency || 'Weekly'}</p>
+                        <p><strong>Status:</strong> <span class="service-status service-${q.service_status}">${q.service_status}</span></p>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="quote-actions">
+                ${!q.purchased && q.quote > 0 ? `<button class="btn btn-success btn-sm" onclick="checkout(${q.id})">Purchase</button>` : ''}
+                ${q.purchased && !q.service_start_date ? `<button class="btn btn-primary btn-sm" onclick="showScheduleModal(${q.id})">Schedule Service</button>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function checkout(customerId) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/payments/create-checkout/${customerId}`, {
+        method: 'POST', headers: {'Authorization': `Bearer ${token}`}
+    });
+    if (res.ok) {
+        const result = await res.json();
+        window.location.href = result.checkout_url;
+    } else {
+        const error = await res.json();
+        alert('Error: ' + (error.detail || 'Failed to create checkout'));
+    }
+}
+
+function showScheduleModal(customerId) {
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 3);
+    const minDateStr = minDate.toISOString().split('T')[0];
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'scheduleModal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Schedule Your Service</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="startDate">Service Start Date *</label>
+                    <input type="date" id="startDate" min="${minDateStr}" required>
+                </div>
+                <div class="form-group">
+                    <label for="frequency">Service Frequency *</label>
+                    <select id="frequency">
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Biweekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="scheduleService(${customerId})">Schedule</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+function closeModal() {
+    const modal = document.getElementById('scheduleModal');
+    if (modal) modal.remove();
+}
+
+async function scheduleService(customerId) {
+    const startDate = document.getElementById('startDate').value;
+    const frequency = document.getElementById('frequency').value;
+    if (!startDate) { alert('Please select a start date'); return; }
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/quotes/schedule-service/${customerId}`, {
+            method: 'POST',
+            headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+            body: JSON.stringify({service_start_date: startDate, service_frequency: frequency})
+        });
+        if (res.ok) { closeModal(); loadDashboard(); }
+        else { const e = await res.json(); alert('Error: ' + (e.detail || 'Failed to schedule service')); }
+    } catch (err) { alert('Connection error. Please try again.'); }
+}
+
+// Calendar
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+
+async function loadUserCalendar() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+        const res = await fetch(`/dashboard/my-calendar?year=${currentYear}&month=${currentMonth}`, {
+            headers: {'Authorization': `Bearer ${token}`}
+        });
+        if (res.ok) renderUserCalendar(await res.json());
+    } catch (err) { console.error(err); }
+}
+
+function renderUserCalendar(data) {
+    const monthNames = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+    document.getElementById('calendarTitle').textContent = `${monthNames[data.month - 1]} ${data.year}`;
+    const grid = document.getElementById('calendarGrid');
+    const headers = grid.querySelectorAll('.calendar-day-header');
+    grid.innerHTML = '';
+    headers.forEach(h => grid.appendChild(h));
+    const firstDay = new Date(data.year, data.month - 1, 1).getDay();
+    const totalDays = new Date(data.year, data.month, 0).getDate();
+    const today = new Date();
+    const eventsByDate = {};
+    data.events.forEach(e => { if (!eventsByDate[e.date]) eventsByDate[e.date] = []; eventsByDate[e.date].push(e); });
+    for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day calendar-day-empty';
+        grid.appendChild(empty);
+    }
+    for (let day = 1; day <= totalDays; day++) {
+        const dateStr = `${data.year}-${String(data.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        if (data.year === today.getFullYear() && data.month === today.getMonth() + 1 && day === today.getDate())
+            cell.classList.add('calendar-day-today');
+        const num = document.createElement('span');
+        num.className = 'day-number';
+        num.textContent = day;
+        cell.appendChild(num);
+        if (eventsByDate[dateStr]) {
+            cell.classList.add('has-events');
+            eventsByDate[dateStr].forEach(ev => {
+                const dot = document.createElement('div');
+                dot.className = 'calendar-event';
+                dot.title = `${ev.title} — ${ev.address}`;
+                dot.innerHTML = '&#127793;';
+                cell.appendChild(dot);
+            });
+        }
+        grid.appendChild(cell);
+    }
+}
+
+document.getElementById('prevMonth')?.addEventListener('click', () => {
+    currentMonth--; if (currentMonth < 1) { currentMonth = 12; currentYear--; } loadUserCalendar();
+});
+document.getElementById('nextMonth')?.addEventListener('click', () => {
+    currentMonth++; if (currentMonth > 12) { currentMonth = 1; currentYear++; } loadUserCalendar();
+});
+
+loadDashboard();
+</script>
+{% endblock %}

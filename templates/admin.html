@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel — Veteran Lawns & Landscapes</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body class="admin-body">
+
+<!-- Sidebar -->
+<aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand">
+        <span class="sidebar-brand-icon">&#9874;</span>
+        <div>
+            <div class="sidebar-brand-name">Veteran Lawns</div>
+            <div class="sidebar-brand-sub">Admin Panel</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a class="sidebar-link active" data-section="overview" onclick="switchSection('overview')">
+            <span class="sidebar-icon">&#9783;</span> Overview
+        </a>
+        <a class="sidebar-link" data-section="quotes" onclick="switchSection('quotes')">
+            <span class="sidebar-icon">&#128196;</span> Quotes
+        </a>
+        <a class="sidebar-link" data-section="customers" onclick="switchSection('customers')">
+            <span class="sidebar-icon">&#128100;</span> Customers
+        </a>
+        <a class="sidebar-link" data-section="users" onclick="switchSection('users')">
+            <span class="sidebar-icon">&#128101;</span> Users
+        </a>
+        <a class="sidebar-link" data-section="payments" onclick="switchSection('payments')">
+            <span class="sidebar-icon">&#128181;</span> Payments
+        </a>
+        <a class="sidebar-link" data-section="pricing" onclick="switchSection('pricing')">
+            <span class="sidebar-icon">&#127991;</span> Pricing
+        </a>
+        <a class="sidebar-link" data-section="calendar" onclick="switchSection('calendar')">
+            <span class="sidebar-icon">&#128197;</span> Calendar
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="/" class="sidebar-link">&#127968; View Site</a>
+        <a href="#" class="sidebar-link" onclick="logout()">&#10144; Logout</a>
+    </div>
+</aside>
+
+<!-- Main content -->
+<div class="admin-main">
+
+    <!-- Top bar -->
+    <header class="admin-topbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">&#9776;</button>
+        <h2 class="topbar-title" id="topbarTitle">Overview</h2>
+        <div class="topbar-user">
+            <span class="admin-badge">Admin</span>
+            <span id="adminEmail"></span>
+        </div>
+    </header>
+
+    <!-- Overview Section -->
+    <section class="admin-section active" id="section-overview">
+        <div class="section-header-row">
+            <h2>Dashboard Overview</h2>
+        </div>
+        <div class="admin-stats-grid" id="statsGrid">
+            <div class="astat-card">
+                <div class="astat-icon">&#128196;</div>
+                <div class="astat-value" id="totalQuotes">—</div>
+                <div class="astat-label">Total Quotes</div>
+            </div>
+            <div class="astat-card astat-green">
+                <div class="astat-icon">&#10003;</div>
+                <div class="astat-value" id="purchasedQuotes">—</div>
+                <div class="astat-label">Purchased</div>
+            </div>
+            <div class="astat-card astat-gold">
+                <div class="astat-icon">&#128200;</div>
+                <div class="astat-value" id="conversionRate">—</div>
+                <div class="astat-label">Conversion</div>
+            </div>
+            <div class="astat-card astat-green">
+                <div class="astat-icon">&#36;</div>
+                <div class="astat-value" id="totalRevenue">—</div>
+                <div class="astat-label">Total Revenue</div>
+            </div>
+            <div class="astat-card">
+                <div class="astat-icon">&#128101;</div>
+                <div class="astat-value" id="totalUsers">—</div>
+                <div class="astat-label">Users</div>
+            </div>
+        </div>
+
+        <div class="overview-grid">
+            <div class="overview-card">
+                <h3>Recent Quotes</h3>
+                <div id="recentQuotes"><p class="loading">Loading...</p></div>
+            </div>
+            <div class="overview-card">
+                <h3>Quick Links</h3>
+                <div class="quick-links">
+                    <button class="ql-btn" onclick="switchSection('customers')">&#128100; Manage Customers</button>
+                    <button class="ql-btn" onclick="switchSection('users')">&#128101; Manage Users</button>
+                    <button class="ql-btn" onclick="switchSection('pricing')">&#127991; Edit Pricing</button>
+                    <button class="ql-btn" onclick="switchSection('calendar')">&#128197; View Calendar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quotes Section -->
+    <section class="admin-section" id="section-quotes">
+        <div class="section-header-row">
+            <h2>All Quotes</h2>
+        </div>
+        <div id="allQuotesContainer"><p class="loading">Loading...</p></div>
+    </section>
+
+    <!-- Customers Section -->
+    <section class="admin-section" id="section-customers">
+        <div class="section-header-row">
+            <h2>Customer Management</h2>
+            <div class="toolbar-filters">
+                <select id="customerPurchasedFilter" onchange="loadCustomers()">
+                    <option value="">All Customers</option>
+                    <option value="true">Purchased</option>
+                    <option value="false">Not Purchased</option>
+                </select>
+                <select id="customerServiceFilter" onchange="loadCustomers()">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+        </div>
+        <div class="payments-summary" id="customersSummary">
+            <div class="summary-card"><span class="summary-value" id="totalCustomers">0</span><span class="summary-label">Total</span></div>
+            <div class="summary-card"><span class="summary-value" id="activeCustomers">0</span><span class="summary-label">Active Services</span></div>
+            <div class="summary-card"><span class="summary-value" id="pendingCustomers">0</span><span class="summary-label">Pending</span></div>
+        </div>
+        <div id="customersContainer"><p class="loading">Loading...</p></div>
+    </section>
+
+    <!-- Users Section -->
+    <section class="admin-section" id="section-users">
+        <div class="section-header-row">
+            <h2>User Management</h2>
+            <div class="toolbar-filters">
+                <select id="userRoleFilter" onchange="loadUsers()">
+                    <option value="">All Roles</option>
+                    <option value="customer">Customers</option>
+                    <option value="admin">Admins</option>
+                    <option value="pm">Project Managers</option>
+                </select>
+                <select id="userStatusFilter" onchange="loadUsers()">
+                    <option value="">All Status</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div id="usersContainer"><p class="loading">Loading...</p></div>
+    </section>
+
+    <!-- Payments Section -->
+    <section class="admin-section" id="section-payments">
+        <div class="section-header-row">
+            <h2>Payment History</h2>
+            <select id="paymentStatusFilter" onchange="loadPayments()">
+                <option value="">All</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+        <div class="payments-summary">
+            <div class="summary-card"><span class="summary-value" id="totalPayments">$0</span><span class="summary-label">Total Revenue</span></div>
+            <div class="summary-card"><span class="summary-value" id="monthlyRevenue">$0</span><span class="summary-label">This Month</span></div>
+            <div class="summary-card"><span class="summary-value" id="paymentCount">0</span><span class="summary-label">Transactions</span></div>
+        </div>
+        <div id="paymentsContainer"><p class="loading">Loading...</p></div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="admin-section" id="section-pricing">
+        <div class="section-header-row">
+            <h2>Service Pricing Rates</h2>
+            <div>
+                <button class="btn btn-sm btn-outline" onclick="addPricingTier()">+ Add Tier</button>
+                <button class="btn btn-sm btn-primary" onclick="savePricingRates()">Save Rates</button>
+            </div>
+        </div>
+        <p class="pricing-note-admin">Prices are charged monthly. Set <strong>Quote Required</strong> for sizes needing a custom quote.</p>
+        <div id="pricingTiersContainer"><p class="loading">Loading...</p></div>
+        <div class="pricing-last-updated" id="pricingLastUpdated"></div>
+    </section>
+
+    <!-- Calendar Section -->
+    <section class="admin-section" id="section-calendar">
+        <div class="section-header-row">
+            <h2>Service Schedule & Availability</h2>
+        </div>
+        <div class="calendar-stats" id="calendarStats" style="margin-bottom:1rem;">
+            <div class="stat-mini"><span class="stat-mini-value" id="totalActiveServices">—</span><span class="stat-mini-label">Active Services</span></div>
+            <div class="stat-mini"><span class="stat-mini-value" id="thisMonthEvents">—</span><span class="stat-mini-label">This Month</span></div>
+        </div>
+        <div class="calendar-container calendar-admin">
+            <div class="calendar-header">
+                <button class="btn btn-outline btn-sm" id="adminPrevMonth">&larr; Prev</button>
+                <h3 id="adminCalendarTitle">Loading...</h3>
+                <button class="btn btn-outline btn-sm" id="adminNextMonth">Next &rarr;</button>
+            </div>
+            <div class="calendar-grid" id="adminCalendarGrid">
+                <div class="calendar-day-header">Sun</div>
+                <div class="calendar-day-header">Mon</div>
+                <div class="calendar-day-header">Tue</div>
+                <div class="calendar-day-header">Wed</div>
+                <div class="calendar-day-header">Thu</div>
+                <div class="calendar-day-header">Fri</div>
+                <div class="calendar-day-header">Sat</div>
+            </div>
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-dot legend-available"></span> Available</span>
+                <span class="legend-item"><span class="legend-dot legend-busy"></span> Busy (5+)</span>
+                <span class="legend-item"><span class="legend-dot legend-full"></span> Full (8)</span>
+            </div>
+        </div>
+        <div class="day-detail-panel" id="dayDetailPanel" style="display:none;">
+            <div class="day-detail-header">
+                <h4 id="dayDetailTitle">Services</h4>
+                <button class="btn-close" onclick="closeDayDetail()">&times;</button>
+            </div>
+            <div class="day-detail-content" id="dayDetailContent"></div>
+        </div>
+    </section>
+
+</div><!-- end admin-main -->
+
+<script src="/static/app.js"></script>
+<script>
+const token = localStorage.getItem('token');
+const headers = {'Authorization': `Bearer ${token}`};
+
+// ── Boot ──────────────────────────────────────────────
+async function boot() {
+    if (!token) { window.location.href = '/login'; return; }
+    const res = await fetch('/auth/me', {headers});
+    if (!res.ok) { localStorage.removeItem('token'); window.location.href = '/login'; return; }
+    const user = await res.json();
+    if (user.role !== 'admin') { window.location.href = '/dashboard'; return; }
+    document.getElementById('adminEmail').textContent = user.email;
+    loadStats();
+    loadRecentQuotes();
+    loadCustomers();
+    loadUsers();
+    loadPayments();
+    loadPricingRates();
+    loadAdminCalendar();
+}
+
+// ── Section switching ─────────────────────────────────
+const sectionTitles = {
+    overview: 'Overview', quotes: 'Quotes', customers: 'Customers',
+    users: 'Users', payments: 'Payments', pricing: 'Pricing', calendar: 'Calendar'
+};
+
+function switchSection(name) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    document.querySelector(`.sidebar-link[data-section="${name}"]`)?.classList.add('active');
+    document.getElementById('topbarTitle').textContent = sectionTitles[name] || name;
+    if (name === 'quotes' && document.getElementById('allQuotesContainer').children[0]?.className === 'loading')
+        loadAllQuotes();
+}
+
+function toggleSidebar() {
+    document.getElementById('adminSidebar').classList.toggle('collapsed');
+}
+
+// ── Stats ─────────────────────────────────────────────
+async function loadStats() {
+    const res = await fetch('/dashboard/admin/stats', {headers});
+    if (!res.ok) return;
+    const s = await res.json();
+    document.getElementById('totalQuotes').textContent = s.total_quotes;
+    document.getElementById('purchasedQuotes').textContent = s.purchased_quotes;
+    document.getElementById('conversionRate').textContent = s.conversion_rate + '%';
+    document.getElementById('totalRevenue').textContent = '$' + s.total_revenue.toFixed(2);
+    document.getElementById('totalUsers').textContent = s.total_users;
+}
+
+// ── Recent Quotes (overview) ──────────────────────────
+async function loadRecentQuotes() {
+    const res = await fetch('/dashboard/admin/quotes?limit=5', {headers});
+    if (!res.ok) return;
+    const quotes = await res.json();
+    const container = document.getElementById('recentQuotes');
+    if (!quotes.length) { container.innerHTML = '<p class="empty">No quotes yet.</p>'; return; }
+    container.innerHTML = quotes.map(q => `
+        <div class="recent-quote-row">
+            <div>
+                <strong>${q.name}</strong>
+                <span class="rq-address">${q.address}</span>
+            </div>
+            <span class="quote-status ${q.purchased ? 'status-purchased' : 'status-pending'}">
+                ${q.purchased ? 'Purchased' : 'Pending'}
+            </span>
+        </div>
+    `).join('');
+}
+
+// ── All Quotes ────────────────────────────────────────
+async function loadAllQuotes() {
+    const res = await fetch('/dashboard/admin/quotes', {headers});
+    if (!res.ok) return;
+    displayQuotesTable(await res.json(), 'allQuotesContainer');
+}
+
+function displayQuotesTable(quotes, containerId) {
+    const container = document.getElementById(containerId);
+    if (!quotes.length) { container.innerHTML = '<p class="empty">No quotes found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table">
+            <thead><tr>
+                <th>Name</th><th>Address</th><th>Size</th>
+                <th>Quote</th><th>Status</th><th>Date</th>
+            </tr></thead>
+            <tbody>${quotes.map(q => `
+                <tr>
+                    <td><strong>${q.name}</strong></td>
+                    <td class="address-cell">${q.address}</td>
+                    <td>${q.actual_size ? q.actual_size.toFixed(2) + ' ac' : '-'}</td>
+                    <td class="amount">${q.quote > 0 ? '$' + q.quote.toFixed(2) : 'QT RQRD'}</td>
+                    <td><span class="status-badge ${q.purchased ? 'status-completed' : 'status-pending-badge'}">${q.purchased ? 'Purchased' : 'Pending'}</span></td>
+                    <td>${new Date(q.created_at).toLocaleDateString()}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+// ── Customers ─────────────────────────────────────────
+async function loadCustomers() {
+    const purchased = document.getElementById('customerPurchasedFilter')?.value || '';
+    const svc = document.getElementById('customerServiceFilter')?.value || '';
+    let url = '/dashboard/admin/customers?';
+    if (purchased) url += `purchased=${purchased}&`;
+    if (svc) url += `service_status=${svc}&`;
+    const res = await fetch(url, {headers});
+    if (!res.ok) return;
+    const customers = await res.json();
+    displayCustomers(customers);
+    updateCustomerSummary(customers);
+}
+
+function displayCustomers(customers) {
+    const container = document.getElementById('customersContainer');
+    if (!customers.length) { container.innerHTML = '<p class="empty">No customers found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table">
+            <thead><tr>
+                <th>Name</th><th>Email</th><th>Address</th><th>Size</th>
+                <th>Quote</th><th>Purchase</th><th>Service</th><th>Actions</th>
+            </tr></thead>
+            <tbody>${customers.map(c => `
+                <tr>
+                    <td><strong>${c.name}</strong></td>
+                    <td>${c.email || '-'}</td>
+                    <td class="address-cell">${c.address}</td>
+                    <td>${c.actual_size ? c.actual_size.toFixed(2) + ' ac' : '-'}</td>
+                    <td class="amount">${c.quote > 0 ? '$' + c.quote.toFixed(2) : 'QT RQRD'}</td>
+                    <td><span class="status-badge ${c.purchased ? 'status-completed' : 'status-pending-badge'}">${c.purchased ? 'Purchased' : 'Pending'}</span></td>
+                    <td>${c.purchased ? `
+                        <select class="service-select" onchange="updateCustomerService(${c.id}, this.value)">
+                            <option value="pending" ${c.service_status==='pending'?'selected':''}>Pending</option>
+                            <option value="active" ${c.service_status==='active'?'selected':''}>Active</option>
+                            <option value="paused" ${c.service_status==='paused'?'selected':''}>Paused</option>
+                            <option value="cancelled" ${c.service_status==='cancelled'?'selected':''}>Cancelled</option>
+                        </select>` : '<span class="text-muted">—</span>'}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline" onclick="showEditCustomerModal(${c.id},'${c.name.replace(/'/g,"\\'")}','${c.phone}',${c.actual_size||0},${c.quote||0})">Edit</button>
+                        ${!c.purchased ? `<button class="btn btn-sm btn-danger" onclick="deleteCustomer(${c.id})">Delete</button>` : ''}
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+function updateCustomerSummary(customers) {
+    document.getElementById('totalCustomers').textContent = customers.length;
+    document.getElementById('activeCustomers').textContent = customers.filter(c => c.service_status === 'active').length;
+    document.getElementById('pendingCustomers').textContent = customers.filter(c => c.service_status === 'pending' && c.purchased).length;
+}
+
+async function updateCustomerService(id, status) {
+    const res = await fetch(`/dashboard/admin/customers/${id}?service_status=${status}`, {method:'PATCH', headers});
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); }
+    loadCustomers();
+}
+
+function showEditCustomerModal(id, name, phone, size, quote) {
+    const modal = document.createElement('div');
+    modal.className = 'modal'; modal.id = 'editCustomerModal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header"><h3>Edit Customer</h3><button class="modal-close" onclick="document.getElementById('editCustomerModal').remove()">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Name</label><input type="text" id="editName" value="${name}"></div>
+                <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${phone}"></div>
+                <div class="form-group"><label>Actual Size (acres)</label><input type="number" id="editSize" step="0.01" value="${size}"></div>
+                <div class="form-group"><label>Quote ($)</label><input type="number" id="editQuote" step="0.01" value="${quote}"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="document.getElementById('editCustomerModal').remove()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCustomer(${id})">Save</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function saveCustomer(id) {
+    const name = document.getElementById('editName').value;
+    const phone = document.getElementById('editPhone').value;
+    const size = document.getElementById('editSize').value;
+    const quote = document.getElementById('editQuote').value;
+    let url = `/dashboard/admin/customers/${id}?`;
+    if (name) url += `name=${encodeURIComponent(name)}&`;
+    if (phone) url += `phone=${encodeURIComponent(phone)}&`;
+    if (size) url += `actual_size=${size}&`;
+    if (quote) url += `quote=${quote}&`;
+    const res = await fetch(url, {method:'PATCH', headers});
+    if (res.ok) { document.getElementById('editCustomerModal')?.remove(); loadCustomers(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function deleteCustomer(id) {
+    if (!confirm('Delete this customer record?')) return;
+    const res = await fetch(`/dashboard/admin/customers/${id}`, {method:'DELETE', headers});
+    if (res.ok) loadCustomers();
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+// ── Users ─────────────────────────────────────────────
+async function loadUsers() {
+    const role = document.getElementById('userRoleFilter')?.value || '';
+    const active = document.getElementById('userStatusFilter')?.value || '';
+    let url = '/dashboard/admin/users?';
+    if (role) url += `role=${role}&`;
+    if (active) url += `is_active=${active}&`;
+    const res = await fetch(url, {headers});
+    if (!res.ok) return;
+    displayUsers(await res.json());
+}
+
+function displayUsers(users) {
+    const container = document.getElementById('usersContainer');
+    if (!users.length) { container.innerHTML = '<p class="empty">No users found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table">
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Verified</th><th>Created</th><th>Last Login</th><th>Actions</th></tr></thead>
+            <tbody>${users.map(u => `
+                <tr>
+                    <td>${u.email}</td>
+                    <td>
+                        <select class="role-select" onchange="updateUserRole(${u.id}, this.value)">
+                            <option value="customer" ${u.role==='customer'?'selected':''}>Customer</option>
+                            <option value="pm" ${u.role==='pm'?'selected':''}>PM</option>
+                            <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+                        </select>
+                    </td>
+                    <td><span class="status-badge ${u.is_active?'status-active':'status-inactive'}">${u.is_active?'Active':'Inactive'}</span></td>
+                    <td>${u.email_verified?'&#10003;':'&#10007;'}</td>
+                    <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
+                    <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'}</td>
+                    <td class="action-buttons">
+                        ${u.is_active
+                            ? `<button class="btn btn-sm btn-outline" onclick="toggleUserStatus(${u.id},false)">Deactivate</button>`
+                            : `<button class="btn btn-sm btn-success" onclick="toggleUserStatus(${u.id},true)">Activate</button>`}
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+async function updateUserRole(id, role) {
+    const res = await fetch(`/dashboard/admin/users/${id}?role=${role}`, {method:'PATCH', headers});
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); }
+    loadUsers();
+}
+
+async function toggleUserStatus(id, active) {
+    const res = await fetch(`/dashboard/admin/users/${id}?is_active=${active}`, {method:'PATCH', headers});
+    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); }
+    loadUsers();
+}
+
+// ── Payments ──────────────────────────────────────────
+async function loadPayments() {
+    const res = await fetch('/dashboard/admin/quotes', {headers});
+    if (!res.ok) return;
+    const all = await res.json();
+    const payments = all.filter(q => q.purchased);
+    displayPayments(payments);
+    const total = payments.reduce((s, p) => s + (p.quote||0), 0);
+    const now = new Date();
+    const monthly = payments.filter(p => {
+        const d = new Date(p.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).reduce((s, p) => s + (p.quote||0), 0);
+    document.getElementById('totalPayments').textContent = '$' + total.toFixed(2);
+    document.getElementById('monthlyRevenue').textContent = '$' + monthly.toFixed(2);
+    document.getElementById('paymentCount').textContent = payments.length;
+}
+
+function displayPayments(payments) {
+    const container = document.getElementById('paymentsContainer');
+    if (!payments.length) { container.innerHTML = '<p class="empty">No payments found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table">
+            <thead><tr><th>Date</th><th>Customer</th><th>Address</th><th>Amount</th><th>Status</th><th>Service</th></tr></thead>
+            <tbody>${payments.map(p => `
+                <tr>
+                    <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                    <td>${p.name}</td>
+                    <td class="address-cell">${p.address}</td>
+                    <td class="amount">$${p.quote.toFixed(2)}</td>
+                    <td><span class="status-badge status-completed">Completed</span></td>
+                    <td><span class="service-status service-${p.service_status||'pending'}">${p.service_status||'pending'}</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+// ── Pricing ───────────────────────────────────────────
+let currentRates = null;
+
+async function loadPricingRates() {
+    const res = await fetch('/dashboard/admin/rates', {headers});
+    if (!res.ok) return;
+    currentRates = await res.json();
+    renderPricingTiers(currentRates);
+}
+
+function renderPricingTiers(rates) {
+    const container = document.getElementById('pricingTiersContainer');
+    if (!rates.tiers?.length) { container.innerHTML = '<p class="empty">No tiers defined.</p>'; return; }
+    const rows = rates.tiers.map((tier, i) => `
+        <tr>
+            <td><input class="tier-input" data-idx="${i}" data-field="label" value="${tier.label}"></td>
+            <td><input class="tier-input tier-num" data-idx="${i}" data-field="min_acres" type="number" step="0.01" value="${tier.min_acres}"></td>
+            <td><input class="tier-input tier-num" data-idx="${i}" data-field="max_acres" type="number" step="0.01" value="${tier.max_acres??''}" placeholder="No limit"></td>
+            <td>
+                <div class="price-cell">
+                    <span class="price-prefix" id="prefix-${i}" ${tier.quote_required?'style="display:none"':''}>$</span>
+                    <input class="tier-input tier-num" id="price-input-${i}" data-idx="${i}" data-field="price" type="number" step="0.01" value="${tier.price??''}" ${tier.quote_required?'disabled style="display:none"':''}>
+                    <span class="qt-label" id="qt-label-${i}" ${tier.quote_required?'':'style="display:none"'}>QT RQRD</span>
+                </div>
+            </td>
+            <td class="text-center">
+                <label class="toggle-label">
+                    <input type="checkbox" class="tier-input tier-check" data-idx="${i}" data-field="quote_required"
+                        onchange="toggleQuoteRequired(${i}, this.checked)" ${tier.quote_required?'checked':''}>
+                    <span class="toggle-text">${tier.quote_required?'Yes':'No'}</span>
+                </label>
+            </td>
+            <td><button class="btn btn-sm btn-danger" onclick="removePricingTier(${i})">Remove</button></td>
+        </tr>`).join('');
+    container.innerHTML = `
+        <table class="admin-table pricing-table">
+            <thead><tr><th>Label</th><th>Min Acres</th><th>Max Acres</th><th>Monthly Price</th><th>Quote Req'd</th><th></th></tr></thead>
+            <tbody id="pricingTiersBody">${rows}</tbody>
+        </table>`;
+    document.querySelectorAll('.tier-input:not(.tier-check)').forEach(inp => inp.addEventListener('input', syncTierFromInputs));
+    const el = document.getElementById('pricingLastUpdated');
+    if (rates.last_updated) el.textContent = `Last updated: ${rates.last_updated}`;
+}
+
+function toggleQuoteRequired(idx, checked) {
+    const pi = document.getElementById(`price-input-${idx}`);
+    const pr = document.getElementById(`prefix-${idx}`);
+    const ql = document.getElementById(`qt-label-${idx}`);
+    const tt = document.querySelector(`.tier-check[data-idx="${idx}"]`).nextElementSibling;
+    pi.style.display = checked ? 'none' : ''; pi.disabled = checked;
+    pr.style.display = checked ? 'none' : '';
+    ql.style.display = checked ? '' : 'none';
+    tt.textContent = checked ? 'Yes' : 'No';
+    syncTierFromInputs();
+}
+
+function syncTierFromInputs() {
+    if (!currentRates) return;
+    document.querySelectorAll('.tier-input').forEach(inp => {
+        const idx = parseInt(inp.dataset.idx);
+        const field = inp.dataset.field;
+        currentRates.tiers[idx][field] = inp.type === 'checkbox' ? inp.checked
+            : inp.type === 'number' ? (inp.value === '' ? null : parseFloat(inp.value))
+            : inp.value;
+    });
+}
+
+function addPricingTier() {
+    if (!currentRates) currentRates = {tiers:[]};
+    currentRates.tiers.push({label:'New Tier', min_acres:0, max_acres:null, price:null, quote_required:true});
+    renderPricingTiers(currentRates);
+}
+
+function removePricingTier(idx) {
+    currentRates?.tiers.splice(idx, 1);
+    renderPricingTiers(currentRates);
+}
+
+async function savePricingRates() {
+    if (!currentRates) return;
+    syncTierFromInputs();
+    const res = await fetch('/dashboard/admin/rates', {
+        method:'PUT', headers: {...headers, 'Content-Type':'application/json'},
+        body: JSON.stringify(currentRates)
+    });
+    if (res.ok) { showToast('Rates saved successfully'); loadPricingRates(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed to save'); }
+}
+
+// ── Calendar ──────────────────────────────────────────
+let adminYear = new Date().getFullYear();
+let adminMonth = new Date().getMonth() + 1;
+let adminCalendarData = null;
+
+async function loadAdminCalendar() {
+    const res = await fetch(`/dashboard/admin/calendar?year=${adminYear}&month=${adminMonth}`, {headers});
+    if (!res.ok) return;
+    adminCalendarData = await res.json();
+    renderAdminCalendar(adminCalendarData);
+    document.getElementById('totalActiveServices').textContent = adminCalendarData.total_services;
+    document.getElementById('thisMonthEvents').textContent = adminCalendarData.events.length;
+}
+
+function renderAdminCalendar(data) {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('adminCalendarTitle').textContent = `${months[data.month-1]} ${data.year}`;
+    const grid = document.getElementById('adminCalendarGrid');
+    const headers = grid.querySelectorAll('.calendar-day-header');
+    grid.innerHTML = ''; headers.forEach(h => grid.appendChild(h));
+    const firstDay = new Date(data.year, data.month-1, 1).getDay();
+    const totalDays = new Date(data.year, data.month, 0).getDate();
+    const today = new Date();
+    for (let i = 0; i < firstDay; i++) {
+        const e = document.createElement('div'); e.className = 'calendar-day calendar-day-empty'; grid.appendChild(e);
+    }
+    for (let day = 1; day <= totalDays; day++) {
+        const dateStr = `${data.year}-${String(data.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day calendar-day-admin';
+        if (data.year===today.getFullYear() && data.month===today.getMonth()+1 && day===today.getDate())
+            cell.classList.add('calendar-day-today');
+        const avail = data.availability[dateStr] || {scheduled:0, available:8, status:'available'};
+        if (avail.status==='full') cell.classList.add('day-full');
+        else if (avail.scheduled>=5) cell.classList.add('day-busy');
+        else if (avail.scheduled>0) cell.classList.add('day-has-services');
+        const num = document.createElement('span'); num.className = 'day-number'; num.textContent = day; cell.appendChild(num);
+        if (avail.scheduled > 0) {
+            const badge = document.createElement('span'); badge.className = 'day-count'; badge.textContent = avail.scheduled; cell.appendChild(badge);
+        }
+        cell.addEventListener('click', () => showDayDetail(dateStr, data));
+        grid.appendChild(cell);
+    }
+}
+
+function showDayDetail(dateStr, data) {
+    const panel = document.getElementById('dayDetailPanel');
+    const content = document.getElementById('dayDetailContent');
+    const d = new Date(dateStr + 'T00:00:00');
+    document.getElementById('dayDetailTitle').textContent = `Services for ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}`;
+    const events = data.events.filter(e => e.date === dateStr);
+    const avail = data.availability[dateStr] || {scheduled:0, available:8};
+    let html = `<div class="day-availability"><span class="avail-scheduled">${avail.scheduled} scheduled</span><span class="avail-open">${avail.available} open</span></div>`;
+    if (!events.length) { html += '<p class="no-events">No services scheduled.</p>'; }
+    else {
+        html += '<div class="event-list">' + events.map(ev => `
+            <div class="event-card">
+                <div class="event-card-header"><strong>${ev.title||'Lawn Service'}</strong><span class="event-status event-${ev.status}">${ev.status}</span></div>
+                <p class="event-address">${ev.address}</p>
+                <div class="event-meta"><span>Size: ${ev.size||'N/A'} ac</span><span>Freq: ${ev.frequency||'weekly'}</span></div>
+            </div>`).join('') + '</div>';
+    }
+    content.innerHTML = html;
+    panel.style.display = 'block';
+}
+
+function closeDayDetail() { document.getElementById('dayDetailPanel').style.display = 'none'; }
+
+document.getElementById('adminPrevMonth')?.addEventListener('click', () => { adminMonth--; if(adminMonth<1){adminMonth=12;adminYear--;} loadAdminCalendar(); });
+document.getElementById('adminNextMonth')?.addEventListener('click', () => { adminMonth++; if(adminMonth>12){adminMonth=1;adminYear++;} loadAdminCalendar(); });
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('toast-show'), 10);
+    setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 300); }, 2500);
+}
+
+function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+
+boot();
+</script>
+</body>
+</html>

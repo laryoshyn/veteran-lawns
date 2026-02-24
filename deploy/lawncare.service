@@ -1,0 +1,65 @@
+# Systemd service for Veteran Lawns & Landscapes FastAPI application
+# Place in /etc/systemd/system/lawncare.service
+#
+# Commands:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable lawncare
+#   sudo systemctl start lawncare
+#   sudo systemctl status lawncare
+#   sudo journalctl -u lawncare -f
+
+[Unit]
+Description=Veteran Lawns & Landscapes FastAPI Application
+Documentation=https://github.com/your-repo/lawn
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/lawn
+
+# Environment
+Environment="PATH=/var/www/lawn/venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/var/www/lawn/.env
+
+# Gunicorn with Uvicorn workers
+ExecStart=/var/www/lawn/venv/bin/gunicorn main:app \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /var/log/lawn/access.log \
+    --error-logfile /var/log/lawn/error.log \
+    --capture-output \
+    --timeout 60 \
+    --graceful-timeout 30 \
+    --keep-alive 5
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/lawn /var/log/lawn
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lawncare
+
+[Install]
+WantedBy=multi-user.target

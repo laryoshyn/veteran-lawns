@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Veteran Lawns & Landscapes{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/">Veteran Lawns & Landscapes</a>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a href="/">Lawn Care</a>
+            <a href="/landscaping">Landscaping</a>
+            <a href="/dashboard" id="dashboardLink" style="display:none;">My Dashboard</a>
+            <a href="/admin" id="adminLink" style="display:none;">Admin Panel</a>
+            <a href="/login" id="loginLink">Login</a>
+            <a href="/register" id="registerLink">Register</a>
+            <a href="#" id="logoutLink" style="display:none;" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Veteran Lawns & Landscapes - Serving Harford County, MD</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Veteran Lawns & Landscapes | Professional Lawn Care in Harford County, MD{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-content">
+            <div class="hero-badge">Veteran Owned & Operated</div>
+            <h1>Professional Lawn Care You Can Trust</h1>
+            <p>Serving Harford County, Maryland with pride. Get your free instant quote in seconds.</p>
+            <a href="#quote-form" class="btn btn-hero">Get Free Quote</a>
+        </div>
+        <div class="hero-image">
+            <img src="/images/2.jpg" alt="Professional lawn care service with American flag" loading="eager">
+        </div>
+    </div>
+</section>
+
+<!-- Trust Indicators -->
+<section class="trust-bar">
+    <div class="trust-item">
+        <span class="trust-icon">&#9733;</span>
+        <span>5-Star Rated</span>
+    </div>
+    <div class="trust-item">
+        <span class="trust-icon">&#10003;</span>
+        <span>Licensed & Insured</span>
+    </div>
+    <div class="trust-item">
+        <span class="trust-icon">&#9881;</span>
+        <span>Satisfaction Guaranteed</span>
+    </div>
+    <div class="trust-item">
+        <span class="trust-icon">&#128197;</span>
+        <span>Flexible Scheduling</span>
+    </div>
+</section>
+
+<!-- Service Type Selection -->
+<section class="service-selection" id="service-type">
+    <div class="section-header">
+        <h2>Choose Your Service</h2>
+        <p>We offer both recurring lawn care and custom landscaping projects</p>
+    </div>
+    <div class="service-cards">
+        <div class="service-type-card active" id="lawncare-card" onclick="selectService('lawncare')">
+            <div class="service-type-icon">&#127793;</div>
+            <h3>Lawn Care</h3>
+            <p>Weekly mowing, edging, and maintenance</p>
+            <ul>
+                <li>Instant online quote</li>
+                <li>Monthly subscription</li>
+                <li>Starting at $215/month</li>
+            </ul>
+            <span class="service-badge">Most Popular</span>
+        </div>
+        <div class="service-type-card" id="landscaping-card" onclick="selectService('landscaping')">
+            <div class="service-type-icon">&#127795;</div>
+            <h3>Landscaping</h3>
+            <p>Custom hardscape and softscape projects</p>
+            <ul>
+                <li>Free consultation</li>
+                <li>Project-based pricing</li>
+                <li>PM site visit included</li>
+            </ul>
+            <span class="service-badge">Custom Projects</span>
+        </div>
+    </div>
+</section>
+
+<!-- Quote Form Section -->
+<section class="quote-section" id="quote-form">
+    <div class="section-header">
+        <h2>Get Your Free Instant Quote</h2>
+        <p>No obligation. No registration required. Just honest pricing.</p>
+    </div>
+
+    <div class="quote-container">
+        <div class="quote-form-wrapper">
+            <form id="quoteForm" class="quote-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="john@example.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="street_address">Street Address *</label>
+                    <input type="text" id="street_address" name="street_address" required placeholder="123 Main Street">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <input type="text" id="city" name="city" value="Bel Air" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="zipcode">ZIP Code *</label>
+                        <input type="text" id="zipcode" name="zipcode" pattern="^\d{5}(-\d{4})?$" required placeholder="21014">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="(410) 555-1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="claimed_size">Estimated Lawn Size (acres) *</label>
+                        <input type="number" id="claimed_size" name="claimed_size" step="0.1" min="0.1" max="10" required placeholder="0.5">
+                    </div>
+                </div>
+
+                <p class="form-note">We verify property sizes with Harford County records for accurate pricing.</p>
+
+                <button type="submit" class="btn btn-primary btn-large" id="submitBtn">
+                    <span id="btnText">Get My Free Quote</span>
+                    <span id="btnLoader" class="loader" style="display:none;"></span>
+                </button>
+            </form>
+
+            <!-- Quote Result -->
+            <div id="quoteResult" class="quote-result" style="display:none;">
+                <div class="result-header">
+                    <span class="result-icon">&#10003;</span>
+                    <h3>Your Quote is Ready!</h3>
+                </div>
+                <div class="result-body">
+                    <div class="result-row">
+                        <span>Property Size:</span>
+                        <span id="resultActualSize">-</span> acres
+                    </div>
+                    <div class="result-row verification" id="verificationRow">
+                        <span id="sizeVerified"></span>
+                    </div>
+                    <div class="result-price">
+                        <div class="price-label">Monthly Service</div>
+                        <div class="price-amount" id="resultQuote">$0.00</div>
+                        <div class="price-note">Billed monthly. Cancel anytime.</div>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <p class="result-message">We've sent the quote details to your email. A team member will contact you within 24 hours to schedule your first service.</p>
+                    <a href="tel:+14105551234" class="btn btn-success btn-large">Call Now: (410) 555-1234</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quote-sidebar">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Weekly Lawn Care</h3>
+                    <div class="pricing-amount">
+                        <span class="dollar">$</span>
+                        <span class="price">215</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <p class="pricing-note">Starting at (for 0.5 acre)</p>
+                </div>
+                <ul class="pricing-features">
+                    <li><span class="check">&#10003;</span> Professional mowing</li>
+                    <li><span class="check">&#10003;</span> Precision edging</li>
+                    <li><span class="check">&#10003;</span> String trimming</li>
+                    <li><span class="check">&#10003;</span> Debris cleanup</li>
+                    <li><span class="check">&#10003;</span> Weekly service</li>
+                    <li><span class="check">&#10003;</span> No contracts required</li>
+                </ul>
+            </div>
+
+            <div class="guarantee-box">
+                <div class="guarantee-icon">&#128170;</div>
+                <h4>100% Satisfaction Guarantee</h4>
+                <p>Not happy? We'll make it right or your next service is free.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section class="services-section">
+    <div class="section-header">
+        <h2>Our Services</h2>
+        <p>Comprehensive lawn care solutions for Harford County homeowners</p>
+    </div>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon">&#127793;</div>
+            <h3>Lawn Mowing</h3>
+            <p>Weekly professional mowing with precision cutting heights tailored to your lawn type.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#9986;</div>
+            <h3>Edging & Trimming</h3>
+            <p>Clean, crisp edges along driveways, walkways, and flower beds.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#127811;</div>
+            <h3>Leaf Removal</h3>
+            <p>Seasonal leaf cleanup to keep your lawn healthy and looking great.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#127807;</div>
+            <h3>Fertilization</h3>
+            <p>Custom fertilization programs to promote thick, green growth.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section">
+    <div class="section-header">
+        <h2>What Our Customers Say</h2>
+        <p>Join hundreds of satisfied homeowners in Harford County</p>
+    </div>
+    <div class="testimonials-grid">
+        <div class="testimonial-card">
+            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p>"Best lawn service we've ever had. Always on time, always professional. My lawn has never looked better!"</p>
+            <div class="testimonial-author">
+                <strong>Sarah M.</strong>
+                <span>Bel Air, MD</span>
+            </div>
+        </div>
+        <div class="testimonial-card">
+            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p>"As a veteran myself, I appreciate their commitment to service. Fair pricing, great results."</p>
+            <div class="testimonial-author">
+                <strong>Mike T.</strong>
+                <span>Fallston, MD</span>
+            </div>
+        </div>
+        <div class="testimonial-card">
+            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p>"The instant quote feature is amazing! No waiting around for estimates. Exactly what I was looking for."</p>
+            <div class="testimonial-author">
+                <strong>Jennifer L.</strong>
+                <span>Aberdeen, MD</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <h2>Ready for a Beautiful Lawn?</h2>
+    <p>Join over 500 satisfied customers in Harford County</p>
+    <a href="#quote-form" class="btn btn-hero">Get Your Free Quote Now</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Service type selection
+function selectService(type) {
+    const lawncareCard = document.getElementById('lawncare-card');
+    const landscapingCard = document.getElementById('landscaping-card');
+    const quoteSection = document.getElementById('quote-form');
+    const landscapingSection = document.getElementById('landscaping-form');
+
+    if (type === 'lawncare') {
+        lawncareCard.classList.add('active');
+        landscapingCard.classList.remove('active');
+        if (quoteSection) quoteSection.style.display = 'block';
+        if (landscapingSection) landscapingSection.style.display = 'none';
+    } else {
+        landscapingCard.classList.add('active');
+        lawncareCard.classList.remove('active');
+        if (quoteSection) quoteSection.style.display = 'none';
+        if (landscapingSection) landscapingSection.style.display = 'block';
+        // Redirect to landscaping page
+        window.location.href = '/landscaping';
+    }
+}
+
+document.getElementById('quoteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+
+    // Show loading state
+    submitBtn.disabled = true;
+    btnText.textContent = 'Getting Your Quote...';
+    btnLoader.style.display = 'inline-block';
+
+    const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        street_address: document.getElementById('street_address').value,
+        city: document.getElementById('city').value,
+        zipcode: document.getElementById('zipcode').value,
+        phone: document.getElementById('phone').value,
+        claimed_size: parseFloat(document.getElementById('claimed_size').value)
+    };
+
+    try {
+        const response = await fetch('/quotes/estimate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            document.getElementById('resultActualSize').textContent = result.actual_size.toFixed(2);
+
+            const quoteEl = document.getElementById('resultQuote');
+            const priceNoteEl = document.querySelector('.price-note');
+            if (result.quote_required) {
+                quoteEl.textContent = 'QT RQRD';
+                quoteEl.classList.add('qt-required');
+                priceNoteEl.textContent = 'Your lot size requires a custom quote. We\'ll contact you within 24 hours.';
+            } else {
+                quoteEl.textContent = `$${result.monthly_quote.toFixed(2)}`;
+                quoteEl.classList.remove('qt-required');
+                priceNoteEl.textContent = 'Billed monthly. Cancel anytime.';
+            }
+            if (result.tier_label) {
+                document.getElementById('resultActualSize').textContent =
+                    `${result.actual_size.toFixed(2)} (${result.tier_label})`;
+            }
+
+            const verifiedEl = document.getElementById('sizeVerified');
+            if (result.size_verified) {
+                verifiedEl.innerHTML = '<span class="verified">&#10003; Size verified with county records</span>';
+            } else {
+                verifiedEl.innerHTML = '<span class="unverified">Based on your estimate</span>';
+            }
+
+            // Hide form, show result
+            document.getElementById('quoteForm').style.display = 'none';
+            document.getElementById('quoteResult').style.display = 'block';
+
+            // Scroll to result
+            document.getElementById('quoteResult').scrollIntoView({behavior: 'smooth', block: 'center'});
+        } else {
+            const error = await response.json();
+            let message = 'Failed to get quote. Please try again.';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    message = error.detail.map(d => d.msg).join('\n');
+                } else {
+                    message = error.detail;
+                }
+            }
+            alert(message);
+        }
+    } catch (err) {
+        alert('Connection error. Please check your internet and try again.');
+        console.error(err);
+    } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        btnText.textContent = 'Get My Free Quote';
+        btnLoader.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
