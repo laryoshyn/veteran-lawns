@@ -4,7 +4,7 @@
    ========================================================================== */
 
 /* --- Font Imports --- */
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+/* Fonts loaded via <link> in base.html for non-blocking render */
 
 /* --- CSS Reset --- */
 *, *::before, *::after {
@@ -217,7 +217,6 @@ h1, h2, h3, h4 {
     flex-direction: column;
     justify-content: center;
     text-align: left;
-    animation: fadeInUp 1s var(--ease-out) forwards;
 }
 
 .hero-image {
