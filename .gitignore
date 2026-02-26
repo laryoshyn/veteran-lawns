@@ -24,6 +24,11 @@ env/
 .coverage
 htmlcov/
 
+# Node
+node_modules/
+package.json
+package-lock.json
+
 # Build
 dist/
 build/
