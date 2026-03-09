@@ -23,6 +23,7 @@ from schemas import (
 )
 from services.maryland_api import fetch_actual_size
 from services.pricing import calculate_price, load_rates_raw
+from services.zillow import fetch_property_size
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,9 @@ async def create_estimate(
         f"{quote_request.city}, MD {quote_request.zipcode}"
     )
 
+    # Fetch Zillow property size (non-blocking on error)
+    map_size = await fetch_property_size(full_address)
+
     # Store customer/quote record (quote=0 when a manual quote is required)
     customer = Customer(
         user_id=user_id,
@@ -103,6 +107,7 @@ async def create_estimate(
         actual_size=actual_size,
         quote=monthly_quote or 0.0,
         parcel_id=parcel_id,
+        map_property_size=map_size,
     )
     db.add(customer)
     await db.commit()

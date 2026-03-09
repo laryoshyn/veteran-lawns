@@ -17,7 +17,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(50), default="customer")  # "customer", "admin", or "pm"
+    role: Mapped[str] = mapped_column(String(50), default="customer")  # "customer", "admin", "pm", or "sales"
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -65,6 +65,12 @@ class Customer(Base):
     service_status: Mapped[str] = mapped_column(
         String(20), default="pending"
     )  # pending, active, paused, cancelled
+
+    # Quote approval (set by admin/sales before sending payment link)
+    quote_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Zillow property size lookup
+    map_property_size: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # FieldRoutes integration
     fieldroutes_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -155,3 +161,56 @@ class LandscapingProject(Base):
     assigned_pm: Mapped[User | None] = relationship(
         "User", back_populates="assigned_projects", foreign_keys=[assigned_pm_id]
     )
+
+
+class Employee(Base):
+    """Staff employee record."""
+
+    __tablename__ = "employees"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    employee_id: Mapped[str | None] = mapped_column(String(50), nullable=True, unique=True)  # e.g. EMP-001
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    position: Mapped[str] = mapped_column(String(50), nullable=False)  # lawn_service, sales, support, manager
+    employment_type: Mapped[str] = mapped_column(String(20), default="full_time")  # full_time, part_time, contractor
+    hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active, inactive, terminated
+
+    # I-9 work authorization (mirrors JobApplication fields)
+    authorized_to_work: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    requires_sponsorship: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    work_auth_status: Mapped[str | None] = mapped_column(String(50), nullable=True)  # citizen, national, permanent_resident, work_visa
+
+    # Sensitive / HR
+    ssn: Mapped[str | None] = mapped_column(String(11), nullable=True)  # stored as XXX-XX-XXXX
+
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class JobApplication(Base):
+    """Job application submitted via the careers form."""
+
+    __tablename__ = "job_applications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    position: Mapped[str] = mapped_column(String(50), nullable=False)  # lawn_service, sales, support
+
+    # I-9 work authorization fields
+    authorized_to_work: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    requires_sponsorship: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    work_auth_status: Mapped[str] = mapped_column(String(50), nullable=False)  # citizen, national, permanent_resident, work_visa
+
+    # Optional
+    availability_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Tracking
+    status: Mapped[str] = mapped_column(String(20), default="new")  # new, reviewing, contacted, hired, rejected
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -42,7 +42,7 @@
 <section class="service-selection" id="service-type">
     <div class="section-header">
         <h2>Choose Your Service</h2>
-        <p>We offer both recurring lawn care and custom landscaping projects</p>
+        <p>Recurring lawn care, custom landscaping projects, or join our growing team</p>
     </div>
     <div class="service-cards">
         <div class="service-type-card active" id="lawncare-card" onclick="selectService('lawncare')">
@@ -66,6 +66,17 @@
                 <li>PM site visit included</li>
             </ul>
             <span class="service-badge">Custom Projects</span>
+        </div>
+        <div class="service-type-card" id="careers-card" onclick="selectService('careers')">
+            <div class="service-type-icon">&#128101;</div>
+            <h3>Join Our Team</h3>
+            <p>Build a career with a veteran-owned company</p>
+            <ul>
+                <li>Competitive pay & benefits</li>
+                <li>Multiple positions open</li>
+                <li>Growth opportunities</li>
+            </ul>
+            <span class="service-badge">We're Hiring</span>
         </div>
     </div>
 </section>
@@ -183,8 +194,137 @@
     </div>
 </section>
 
+<!-- Join Our Team / Careers Section -->
+<section class="quote-section" id="careers-form" style="display:none;">
+    <div class="section-header">
+        <h2>Join Veteran Lawns & Landscapes</h2>
+        <p>We're growing and looking for dedicated professionals. Veterans encouraged to apply.</p>
+    </div>
+
+    <div class="quote-container">
+        <div class="quote-form-wrapper">
+            <form id="applicationForm" class="quote-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="app_name">Full Name *</label>
+                        <input type="text" id="app_name" name="name" required placeholder="John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="app_email">Email Address *</label>
+                        <input type="email" id="app_email" name="email" required placeholder="john@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="app_phone">Phone Number *</label>
+                        <input type="tel" id="app_phone" name="phone" required placeholder="(410) 555-1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="app_position">Position *</label>
+                        <select id="app_position" name="position" required>
+                            <option value="">Select a position...</option>
+                            <option value="lawn_service">Lawn Service Team</option>
+                            <option value="sales">Sales</option>
+                            <option value="support">Support Team</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section-divider"><span>Work Authorization (I-9)</span></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="app_authorized">Are you legally authorized to work in the United States? *</label>
+                        <select id="app_authorized" name="authorized_to_work" required>
+                            <option value="">Select...</option>
+                            <option value="true">Yes, I am authorized</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="app_sponsorship">Will you require employer sponsorship for a work visa? *</label>
+                        <select id="app_sponsorship" name="requires_sponsorship" required>
+                            <option value="">Select...</option>
+                            <option value="false">No</option>
+                            <option value="true">Yes, I will require sponsorship</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="app_work_auth_status">Work Authorization Status *</label>
+                        <select id="app_work_auth_status" name="work_auth_status" required>
+                            <option value="">Select your status...</option>
+                            <option value="citizen">U.S. Citizen</option>
+                            <option value="national">U.S. Noncitizen National</option>
+                            <option value="permanent_resident">Lawful Permanent Resident (Green Card)</option>
+                            <option value="work_visa">Alien Authorized to Work</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="app_availability">Available Start Date</label>
+                        <input type="date" id="app_availability" name="availability_date">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="app_message">Tell us about yourself (Optional)</label>
+                    <textarea id="app_message" name="message" rows="4" placeholder="Relevant experience, certifications, why you want to join our team..."></textarea>
+                </div>
+
+                <p class="form-note">We are an equal opportunity employer. All applicants considered without regard to race, color, religion, sex, national origin, age, disability, or veteran status.</p>
+
+                <button type="submit" class="btn btn-primary btn-large" id="appSubmitBtn">
+                    <span id="appBtnText">Submit Application</span>
+                    <span id="appBtnLoader" class="loader" style="display:none;"></span>
+                </button>
+            </form>
+
+            <!-- Application Result -->
+            <div id="applicationResult" class="quote-result" style="display:none;">
+                <div class="result-header">
+                    <span class="result-icon">&#10003;</span>
+                    <h3>Application Received!</h3>
+                </div>
+                <div class="result-body">
+                    <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 1.5rem 0;">
+                        Thank you for your interest in joining Veteran Lawns & Landscapes. Our team will review your application and reach out within 3–5 business days.
+                    </p>
+                </div>
+                <div class="result-actions">
+                    <a href="tel:+14105551234" class="btn btn-success btn-large">Questions? Call Us</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quote-sidebar">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Why Join Our Team?</h3>
+                </div>
+                <ul class="pricing-features">
+                    <li><span class="check">&#10003;</span> Competitive pay</li>
+                    <li><span class="check">&#10003;</span> Flexible scheduling</li>
+                    <li><span class="check">&#10003;</span> Veteran-friendly culture</li>
+                    <li><span class="check">&#10003;</span> Career growth paths</li>
+                    <li><span class="check">&#10003;</span> Supportive team environment</li>
+                    <li><span class="check">&#10003;</span> Local, outdoor work</li>
+                </ul>
+            </div>
+
+            <div class="guarantee-box">
+                <div class="guarantee-icon">&#127881;</div>
+                <h4>Equal Opportunity Employer</h4>
+                <p>We welcome applicants from all backgrounds. Veterans are strongly encouraged to apply.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Services Section -->
-<section class="services-section">
+<section class="services-section" id="lawn-services-section">
     <div class="section-header">
         <h2>Our Services</h2>
         <p>Comprehensive lawn care solutions for Harford County homeowners</p>
@@ -213,8 +353,37 @@
     </div>
 </section>
 
+<section class="services-section" id="careers-benefits-section" style="display:none;">
+    <div class="section-header">
+        <h2>Why Work With Us</h2>
+        <p>Join a veteran-owned team that takes care of its people</p>
+    </div>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon">&#128176;</div>
+            <h3>Competitive Pay</h3>
+            <p>Above-market hourly rates with regular reviews and performance bonuses.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#128197;</div>
+            <h3>Flexible Scheduling</h3>
+            <p>Full-time, part-time, and contractor arrangements to fit your life.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#127981;</div>
+            <h3>Veteran-Friendly Culture</h3>
+            <p>Veteran-owned and operated. We understand military experience and value your service.</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">&#128200;</div>
+            <h3>Career Growth</h3>
+            <p>Clear advancement paths from crew member to team lead and beyond.</p>
+        </div>
+    </div>
+</section>
+
 <!-- Testimonials Section -->
-<section class="testimonials-section">
+<section class="testimonials-section" style="display:none;">
     <div class="section-header">
         <h2>What Our Customers Say</h2>
         <p>Join hundreds of satisfied homeowners in Harford County</p>
@@ -250,7 +419,6 @@
 <!-- CTA Section -->
 <section class="cta-section">
     <h2>Ready for a Beautiful Lawn?</h2>
-    <p>Join over 500 satisfied customers in Harford County</p>
     <a href="#quote-form" class="btn btn-hero">Get Your Free Quote Now</a>
 </section>
 {% endblock %}
@@ -261,21 +429,35 @@
 function selectService(type) {
     const lawncareCard = document.getElementById('lawncare-card');
     const landscapingCard = document.getElementById('landscaping-card');
+    const careersCard = document.getElementById('careers-card');
     const quoteSection = document.getElementById('quote-form');
-    const landscapingSection = document.getElementById('landscaping-form');
+    const careersSection = document.getElementById('careers-form');
+
+    lawncareCard.classList.remove('active');
+    landscapingCard.classList.remove('active');
+    careersCard.classList.remove('active');
+
+    const lawnServices = document.getElementById('lawn-services-section');
+    const careersServices = document.getElementById('careers-benefits-section');
 
     if (type === 'lawncare') {
         lawncareCard.classList.add('active');
-        landscapingCard.classList.remove('active');
         if (quoteSection) quoteSection.style.display = 'block';
-        if (landscapingSection) landscapingSection.style.display = 'none';
-    } else {
+        if (careersSection) careersSection.style.display = 'none';
+        if (lawnServices) lawnServices.style.display = '';
+        if (careersServices) careersServices.style.display = 'none';
+    } else if (type === 'landscaping') {
         landscapingCard.classList.add('active');
-        lawncareCard.classList.remove('active');
-        if (quoteSection) quoteSection.style.display = 'none';
-        if (landscapingSection) landscapingSection.style.display = 'block';
-        // Redirect to landscaping page
         window.location.href = '/landscaping';
+    } else if (type === 'careers') {
+        careersCard.classList.add('active');
+        if (quoteSection) quoteSection.style.display = 'none';
+        if (careersSection) {
+            careersSection.style.display = 'block';
+            careersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (lawnServices) lawnServices.style.display = 'none';
+        if (careersServices) careersServices.style.display = '';
     }
 }
 
@@ -361,6 +543,60 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
         // Reset button
         submitBtn.disabled = false;
         btnText.textContent = 'Get My Free Quote';
+        btnLoader.style.display = 'none';
+    }
+});
+
+document.getElementById('applicationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('appSubmitBtn');
+    const btnText = document.getElementById('appBtnText');
+    const btnLoader = document.getElementById('appBtnLoader');
+
+    submitBtn.disabled = true;
+    btnText.textContent = 'Submitting...';
+    btnLoader.style.display = 'inline-block';
+
+    const formData = {
+        name: document.getElementById('app_name').value,
+        email: document.getElementById('app_email').value,
+        phone: document.getElementById('app_phone').value,
+        position: document.getElementById('app_position').value,
+        authorized_to_work: document.getElementById('app_authorized').value === 'true',
+        requires_sponsorship: document.getElementById('app_sponsorship').value === 'true',
+        work_auth_status: document.getElementById('app_work_auth_status').value,
+        availability_date: document.getElementById('app_availability').value || null,
+        message: document.getElementById('app_message').value || null,
+    };
+
+    try {
+        const response = await fetch('/careers/apply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+            document.getElementById('applicationForm').style.display = 'none';
+            document.getElementById('applicationResult').style.display = 'block';
+            document.getElementById('applicationResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            const error = await response.json();
+            let message = 'Failed to submit application. Please try again.';
+            if (error.detail) {
+                message = Array.isArray(error.detail)
+                    ? error.detail.map(d => d.msg).join('\n')
+                    : error.detail;
+            }
+            alert(message);
+        }
+    } catch (err) {
+        alert('Connection error. Please check your internet and try again.');
+        console.error(err);
+    } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = 'Submit Application';
         btnLoader.style.display = 'none';
     }
 });

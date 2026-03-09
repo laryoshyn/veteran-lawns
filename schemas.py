@@ -125,12 +125,15 @@ class CustomerResponse(BaseModel):
 
     id: int
     name: str
+    email: str
     address: str
     phone: str
     claimed_size: float | None
     actual_size: float | None
     quote: float | None
     purchased: bool
+    quote_approved: bool = False
+    map_property_size: float | None = None
     created_at: datetime
     service_start_date: date | None = None
     service_frequency: str | None = None

@@ -1,18 +1,24 @@
 """Dashboard endpoints for customers and admins."""
 
 import logging
+import time
 from datetime import date, timedelta
 from typing import Annotated
 
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, require_admin
+from auth import get_current_user, get_password_hash, require_admin, require_staff, verify_password
+from config import get_settings
 from database import get_db
 from models import Customer, User
 from schemas import CustomerResponse
+from services.email import send_payment_link_email
 from services.pricing import load_rates_raw, save_rates
+from services.settings import load_business_settings, save_business_settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +79,7 @@ async def get_my_quote(
 @router.get("/admin/quotes", response_model=list[CustomerResponse])
 async def admin_get_all_quotes(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(require_admin)],
+    current_user: Annotated[User, Depends(require_staff)],
     skip: int = 0,
     limit: int = 100,
 ) -> list[Customer]:
@@ -97,7 +103,7 @@ async def admin_get_all_quotes(
 async def admin_get_quote(
     quote_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(require_admin)],
+    current_user: Annotated[User, Depends(require_staff)],
 ) -> Customer:
     """
     Get a specific quote by ID (admin only).
@@ -112,6 +118,89 @@ async def admin_get_quote(
         )
 
     return quote
+
+
+@router.post("/admin/quotes/{quote_id}/approve")
+async def admin_approve_quote(
+    quote_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_staff)],
+):
+    """Mark a quote as approved (admin or sales). Required before sending a payment link."""
+    result = await db.execute(select(Customer).where(Customer.id == quote_id))
+    quote = result.scalar_one_or_none()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    if quote.purchased:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already purchased")
+
+    quote.quote_approved = True
+    await db.commit()
+    logger.info(f"Quote {quote_id} approved by {current_user.email}")
+    return {"message": "Quote approved"}
+
+
+@router.post("/admin/quotes/{quote_id}/send-payment-link")
+async def admin_send_payment_link(
+    quote_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_staff)],
+):
+    """Create a Stripe checkout URL and email it to the customer."""
+    result = await db.execute(select(Customer).where(Customer.id == quote_id))
+    quote = result.scalar_one_or_none()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    if quote.purchased:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already purchased")
+    if not quote.quote_approved:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote must be approved before sending payment link")
+    if not quote.quote or quote.quote <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote has no valid amount")
+
+    _settings = get_settings()
+    stripe.api_key = _settings.stripe_secret_key
+    base = "http://localhost:8000" if _settings.debug else "https://veteranlawnsandlandscapes.com"
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": f"Monthly Lawn Care - {quote.actual_size:.2f} acres",
+                        "description": f"Service for {quote.address}",
+                    },
+                    "unit_amount": int(quote.quote * 100),
+                    "recurring": {"interval": "month"},
+                },
+                "quantity": 1,
+            }],
+            mode="subscription",
+            success_url=f"{base}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base}/payment/cancel",
+            customer_email=quote.email,
+            expires_at=int(time.time()) + 86400,
+            metadata={"customer_id": str(quote.id), "quote_amount": str(quote.quote)},
+        )
+        checkout_url = session.url
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout for quote {quote_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Payment service error")
+
+    sent = await send_payment_link_email(
+        to_email=quote.email,
+        customer_name=quote.name,
+        checkout_url=checkout_url,
+        monthly_quote=quote.quote,
+    )
+
+    logger.info(
+        f"Payment link for quote {quote_id} created by {current_user.email}, "
+        f"email_sent={sent}, url={checkout_url}"
+    )
+    return {"checkout_url": checkout_url, "email_sent": sent}
 
 
 @router.get("/admin/stats")
@@ -437,10 +526,10 @@ async def admin_update_user(
 
     # Validate role if provided
     if role is not None:
-        if role not in ["customer", "admin", "pm"]:
+        if role not in ["customer", "admin", "pm", "sales"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be: customer, admin, or pm",
+                detail="Invalid role. Must be: customer, admin, pm, or sales",
             )
         user.role = role
         logger.info(f"Admin {current_user.email} changed user {user.email} role to {role}")
@@ -535,6 +624,8 @@ async def admin_get_customers(
             "service_start_date": c.service_start_date.isoformat() if c.service_start_date else None,
             "service_frequency": c.service_frequency,
             "service_status": c.service_status,
+            "stripe_payment_id": c.stripe_payment_id,
+            "fieldroutes_customer_id": c.fieldroutes_customer_id,
             "created_at": c.created_at.isoformat() if c.created_at else None,
         }
         for c in customers
@@ -587,12 +678,15 @@ async def admin_update_customer(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
     name: str | None = None,
+    email: str | None = None,
     phone: str | None = None,
     address: str | None = None,
+    claimed_size: float | None = None,
     actual_size: float | None = None,
     quote: float | None = None,
     service_status: str | None = None,
     service_frequency: str | None = None,
+    service_start_date: str | None = None,
 ):
     """
     Update a customer's details (admin only).
@@ -609,16 +703,28 @@ async def admin_update_customer(
     # Update fields if provided
     if name is not None:
         customer.name = name
+    if email is not None:
+        customer.email = email
     if phone is not None:
         customer.phone = phone
     if address is not None:
         customer.address = address
+    if claimed_size is not None:
+        customer.claimed_size = claimed_size
     if actual_size is not None:
         customer.actual_size = actual_size
         # Recalculate quote based on new size ($430/acre)
         customer.quote = round(actual_size * 430, 2)
     if quote is not None:
         customer.quote = quote
+    if service_start_date is not None:
+        try:
+            customer.service_start_date = date.fromisoformat(service_start_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date format. Use YYYY-MM-DD",
+            )
     if service_status is not None:
         valid_statuses = ["pending", "active", "paused", "cancelled"]
         if service_status not in valid_statuses:
@@ -730,3 +836,255 @@ async def admin_update_rates(
     save_rates(rates)
     logger.info(f"Admin {current_user.email} updated pricing rates")
     return {"message": "Pricing rates updated", "tiers": len(tiers)}
+
+
+@router.get("/admin/db-schema")
+async def admin_db_schema(
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Return database table structure for the admin schema viewer."""
+    tables = []
+    # Get all table names from sqlite_master
+    result = await db.execute(
+        __import__("sqlalchemy").text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )
+    )
+    table_names = [row[0] for row in result.fetchall()]
+
+    for table_name in table_names:
+        col_result = await db.execute(
+            __import__("sqlalchemy").text(f"PRAGMA table_info('{table_name}')")
+        )
+        columns = [
+            {
+                "cid": row[0],
+                "name": row[1],
+                "type": row[2],
+                "not_null": bool(row[3]),
+                "default": row[4],
+                "pk": bool(row[5]),
+            }
+            for row in col_result.fetchall()
+        ]
+
+        idx_result = await db.execute(
+            __import__("sqlalchemy").text(f"PRAGMA index_list('{table_name}')")
+        )
+        indexes = [{"name": row[1], "unique": bool(row[2])} for row in idx_result.fetchall()]
+
+        # Row count
+        count_result = await db.execute(
+            __import__("sqlalchemy").text(f"SELECT COUNT(*) FROM '{table_name}'")
+        )
+        row_count = count_result.scalar()
+
+        tables.append({
+            "name": table_name,
+            "columns": columns,
+            "indexes": indexes,
+            "row_count": row_count,
+        })
+
+    return {"tables": tables}
+
+
+@router.get("/admin/settings")
+async def admin_get_settings(
+    _: Annotated[User, Depends(require_admin)],
+):
+    """Return full settings for the admin settings panel."""
+    s = get_settings()
+    biz = load_business_settings()
+    return {
+        "business": biz,
+        "integrations": {
+            "stripe": {
+                "configured": bool(s.stripe_secret_key),
+                "secret_key": s.stripe_secret_key,
+                "webhook_secret": s.stripe_webhook_secret,
+            },
+            "fieldroutes": {
+                "configured": bool(s.fieldroutes_api_key and s.fieldroutes_account_id),
+                "api_key": s.fieldroutes_api_key,
+                "account_id": s.fieldroutes_account_id,
+                "api_url": s.fieldroutes_api_url,
+            },
+            "smtp": {
+                "configured": bool(s.smtp_host and s.smtp_user and s.smtp_password),
+                "host": s.smtp_host,
+                "port": s.smtp_port,
+                "user": s.smtp_user,
+                "password": s.smtp_password,
+                "from_address": s.smtp_from,
+            },
+            "mta": {
+                "configured": bool(s.mta_api_key and s.mta_account_id),
+                "api_key": s.mta_api_key,
+                "account_id": s.mta_account_id,
+            },
+            "zillow": {
+                "configured": bool(s.zillow_api_key),
+                "api_key": s.zillow_api_key,
+                "api_host": s.zillow_api_host,
+            },
+            "everify": {
+                "configured": bool(s.everify_client_id and s.everify_client_secret and s.everify_company_id),
+                "client_id": s.everify_client_id,
+                "client_secret": s.everify_client_secret,
+                "company_id": s.everify_company_id,
+                "api_url": s.everify_api_url,
+            },
+            "paychex": {
+                "configured": bool(s.paychex_client_id and s.paychex_client_secret and s.paychex_company_id),
+                "client_id": s.paychex_client_id,
+                "client_secret": s.paychex_client_secret,
+                "company_id": s.paychex_company_id,
+                "api_url": s.paychex_api_url,
+            },
+        },
+        "app": {
+            "token_expire_minutes": s.access_token_expire_minutes,
+            "price_per_acre": s.price_per_acre,
+        },
+    }
+
+
+@router.put("/admin/settings")
+async def admin_update_settings(
+    data: dict,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """Save editable business settings (admin only)."""
+    save_business_settings(data)
+    logger.info(f"Admin {current_user.email} updated business settings")
+    return {"message": "Settings saved"}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class QuoteEditRequest(BaseModel):
+    actual_size: float | None = None
+    map_property_size: float | None = None
+    quote: float | None = None
+
+
+def _get_base_url() -> str:
+    """Get the base URL for redirects."""
+    _settings = get_settings()
+    if _settings.debug:
+        return "http://localhost:8000"
+    return "https://veteranlawnsandlandscapes.com"
+
+
+@router.post("/admin/change-password")
+async def admin_change_password(
+    body: ChangePasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """Change the current admin's password."""
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be at least 8 characters")
+    current_user.hashed_password = get_password_hash(body.new_password)
+    await db.commit()
+    logger.info(f"Admin {current_user.email} changed their password")
+    return {"message": "Password updated successfully"}
+
+
+@router.patch("/admin/quotes/{quote_id}")
+async def admin_edit_quote(
+    quote_id: int,
+    data: QuoteEditRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_staff)],
+):
+    """Edit quote fields (actual_size, map_property_size, quote amount)."""
+    result = await db.execute(select(Customer).where(Customer.id == quote_id))
+    quote = result.scalar_one_or_none()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    if data.actual_size is not None:
+        quote.actual_size = data.actual_size
+    if data.map_property_size is not None:
+        quote.map_property_size = data.map_property_size
+    if data.quote is not None:
+        quote.quote = data.quote
+    await db.commit()
+    logger.info(f"Staff {current_user.email} edited quote {quote_id}")
+    return {"message": "Quote updated"}
+
+
+@router.post("/admin/quotes/{quote_id}/approve-and-send")
+async def admin_approve_and_send(
+    quote_id: int,
+    data: QuoteEditRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_staff)],
+):
+    """Edit quote fields, approve, create Stripe checkout, and email payment link."""
+    result = await db.execute(select(Customer).where(Customer.id == quote_id))
+    quote = result.scalar_one_or_none()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    if quote.purchased:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already purchased")
+
+    # Apply edits
+    if data.actual_size is not None:
+        quote.actual_size = data.actual_size
+    if data.map_property_size is not None:
+        quote.map_property_size = data.map_property_size
+    if data.quote is not None:
+        quote.quote = data.quote
+
+    if not quote.quote or quote.quote <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote amount must be greater than zero")
+
+    quote.quote_approved = True
+    await db.commit()
+    await db.refresh(quote)
+
+    _settings = get_settings()
+    stripe.api_key = _settings.stripe_secret_key
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": f"Monthly Lawn Care - {quote.actual_size:.2f} acres",
+                        "description": f"Weekly mowing service for {quote.address}",
+                    },
+                    "unit_amount": int(quote.quote * 100),
+                    "recurring": {"interval": "month"},
+                },
+                "quantity": 1,
+            }],
+            mode="subscription",
+            success_url=f"{_get_base_url()}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{_get_base_url()}/payment/cancel",
+            customer_email=quote.email,
+            expires_at=int(time.time()) + 86400,
+            metadata={"customer_id": str(quote_id), "quote_amount": str(quote.quote)},
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error for quote {quote_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Payment service error")
+
+    email_sent = await send_payment_link_email(
+        to_email=quote.email,
+        customer_name=quote.name,
+        checkout_url=checkout_session.url,
+        monthly_quote=quote.quote,
+    )
+    logger.info(f"Staff {current_user.email} approved+sent quote {quote_id}, email_sent={email_sent}")
+    return {"checkout_url": checkout_session.url, "email_sent": email_sent}

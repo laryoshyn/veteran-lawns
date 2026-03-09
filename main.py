@@ -15,7 +15,7 @@ from slowapi.util import get_remote_address
 
 from config import get_settings
 from database import Base, engine
-from routers import auth, dashboard, landscaping, pages, payments, pm_tools, quotes
+from routers import auth, careers, dashboard, employees, landscaping, pages, payments, pm_tools, quotes
 
 # Configure logging
 logging.basicConfig(
@@ -143,6 +143,8 @@ app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(payments.router, prefix="/payments", tags=["Payments"])
 app.include_router(landscaping.router, prefix="/landscaping", tags=["Landscaping"])
 app.include_router(pm_tools.router, prefix="/pm", tags=["PM Tools"])
+app.include_router(careers.router, prefix="/careers", tags=["Careers"])
+app.include_router(employees.router, prefix="/employees", tags=["Employees"])
 
 # Static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -18,6 +18,49 @@
     </div>
 </section>
 
+<!-- Service Type Selection -->
+<section class="service-selection" id="service-type">
+    <div class="section-header">
+        <h2>Choose Your Service</h2>
+        <p>Recurring lawn care, custom landscaping projects, or join our growing team</p>
+    </div>
+    <div class="service-cards">
+        <div class="service-type-card" id="lawncare-card" onclick="selectService('lawncare')">
+            <div class="service-type-icon">&#127793;</div>
+            <h3>Lawn Care</h3>
+            <p>Weekly mowing, edging, and maintenance</p>
+            <ul>
+                <li>Instant online quote</li>
+                <li>Monthly subscription</li>
+                <li>Starting at $215/month</li>
+            </ul>
+            <span class="service-badge">Most Popular</span>
+        </div>
+        <div class="service-type-card active" id="landscaping-card" onclick="selectService('landscaping')">
+            <div class="service-type-icon">&#127795;</div>
+            <h3>Landscaping</h3>
+            <p>Custom hardscape and softscape projects</p>
+            <ul>
+                <li>Free consultation</li>
+                <li>Project-based pricing</li>
+                <li>PM site visit included</li>
+            </ul>
+            <span class="service-badge">Custom Projects</span>
+        </div>
+        <div class="service-type-card" id="careers-card" onclick="selectService('careers')">
+            <div class="service-type-icon">&#128101;</div>
+            <h3>Join Our Team</h3>
+            <p>Build a career with a veteran-owned company</p>
+            <ul>
+                <li>Competitive pay & benefits</li>
+                <li>Multiple positions open</li>
+                <li>Growth opportunities</li>
+            </ul>
+            <span class="service-badge">We're Hiring</span>
+        </div>
+    </div>
+</section>
+
 <!-- Landscaping Form Section -->
 <section class="quote-section" id="landscaping-form">
     <div class="section-header">
@@ -199,6 +242,17 @@
 
 {% block scripts %}
 <script>
+// Service type selection
+function selectService(type) {
+    if (type === 'lawncare') {
+        window.location.href = '/#quote-form';
+    } else if (type === 'landscaping') {
+        document.getElementById('landscaping-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (type === 'careers') {
+        window.location.href = '/#careers-form';
+    }
+}
+
 // Load dropdown options on page load
 async function loadOptions() {
     try {

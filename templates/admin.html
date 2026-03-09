@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel — Veteran Lawns & Landscapes</title>
+    <link rel="icon" type="image/webp" href="/static/favicon.webp">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/admin.css">
 </head>
@@ -41,9 +42,15 @@
         <a class="sidebar-link" data-section="calendar" onclick="switchSection('calendar')">
             <span class="sidebar-icon">&#128197;</span> Calendar
         </a>
+        <a class="sidebar-link" data-section="employees" onclick="switchSection('employees')">
+            <span class="sidebar-icon">&#128203;</span> Employees
+        </a>
     </nav>
 
     <div class="sidebar-footer">
+        <a class="sidebar-link" data-section="settings" onclick="switchSection('settings')">
+            <span class="sidebar-icon">&#9881;</span> Settings
+        </a>
         <a href="/" class="sidebar-link">&#127968; View Site</a>
         <a href="#" class="sidebar-link" onclick="logout()">&#10144; Logout</a>
     </div>
@@ -101,10 +108,15 @@
                 <div id="recentQuotes"><p class="loading">Loading...</p></div>
             </div>
             <div class="overview-card">
+                <h3>Recent Applications</h3>
+                <div id="recentApplications"><p class="loading">Loading...</p></div>
+            </div>
+            <div class="overview-card">
                 <h3>Quick Links</h3>
                 <div class="quick-links">
                     <button class="ql-btn" onclick="switchSection('customers')">&#128100; Manage Customers</button>
                     <button class="ql-btn" onclick="switchSection('users')">&#128101; Manage Users</button>
+                    <button class="ql-btn" onclick="switchSection('employees')">&#128203; Manage Employees</button>
                     <button class="ql-btn" onclick="switchSection('pricing')">&#127991; Edit Pricing</button>
                     <button class="ql-btn" onclick="switchSection('calendar')">&#128197; View Calendar</button>
                 </div>
@@ -238,6 +250,534 @@
         </div>
     </section>
 
+    <!-- Employees Section -->
+    <section class="admin-section" id="section-employees">
+        <div class="emp-tabs">
+            <button class="emp-tab active" id="tab-staff" onclick="switchEmpTab('staff')">Staff Roster</button>
+            <button class="emp-tab" id="tab-applications" onclick="switchEmpTab('applications')">Job Applications</button>
+        </div>
+
+        <!-- Staff Roster -->
+        <div id="empPanel-staff">
+            <div class="section-header-row">
+                <h2>Staff Roster</h2>
+                <div class="toolbar-filters">
+                    <select id="empPositionFilter" onchange="loadEmployees()">
+                        <option value="">All Positions</option>
+                        <option value="lawn_service">Lawn Service</option>
+                        <option value="sales">Sales</option>
+                        <option value="support">Support</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                    <select id="empStatusFilter" onchange="loadEmployees()">
+                        <option value="active">Active</option>
+                        <option value="">All Statuses</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="terminated">Terminated</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showAddEmployeeModal()">+ Add Employee</button>
+                </div>
+            </div>
+            <div class="payments-summary">
+                <div class="summary-card"><span class="summary-value" id="totalEmployees">0</span><span class="summary-label">Total</span></div>
+                <div class="summary-card"><span class="summary-value" id="activeEmployees">0</span><span class="summary-label">Active</span></div>
+                <div class="summary-card"><span class="summary-value" id="ftEmployees">0</span><span class="summary-label">Full Time</span></div>
+            </div>
+            <div id="employeesContainer"><p class="loading">Loading...</p></div>
+        </div>
+
+        <!-- Job Applications -->
+        <div id="empPanel-applications" style="display:none;">
+            <div class="section-header-row">
+                <h2>Job Applications</h2>
+                <div class="toolbar-filters">
+                    <select id="appPositionFilter" onchange="loadApplications()">
+                        <option value="">All Positions</option>
+                        <option value="lawn_service">Lawn Service Team</option>
+                        <option value="sales">Sales</option>
+                        <option value="support">Support Team</option>
+                    </select>
+                    <select id="appStatusFilter" onchange="loadApplications()">
+                        <option value="">All Statuses</option>
+                        <option value="new">New</option>
+                        <option value="reviewing">Reviewing</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="hired">Hired</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+            </div>
+            <div class="payments-summary" id="appsSummary">
+                <div class="summary-card"><span class="summary-value" id="totalApps">0</span><span class="summary-label">Total</span></div>
+                <div class="summary-card"><span class="summary-value" id="newApps">0</span><span class="summary-label">New</span></div>
+                <div class="summary-card"><span class="summary-value" id="hiredApps">0</span><span class="summary-label">Hired</span></div>
+            </div>
+            <div id="applicationsContainer"><p class="loading">Loading...</p></div>
+        </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section class="admin-section" id="section-settings">
+
+        <div class="settings-header">
+            <div class="settings-header-icon">&#9881;</div>
+            <div>
+                <h2 class="settings-header-title">Settings</h2>
+                <p class="settings-header-sub">Manage your business configuration and integrations</p>
+            </div>
+        </div>
+
+        <div class="settings-tabs">
+            <button class="settings-tab active" data-stab="general"       onclick="switchSettingsTab('general')"><span>&#127968;</span> General</button>
+            <button class="settings-tab"         data-stab="labor"        onclick="switchSettingsTab('labor')"><span>&#128176;</span> Labor &amp; Rates</button>
+            <button class="settings-tab"         data-stab="integrations" onclick="switchSettingsTab('integrations')"><span>&#128279;</span> Integrations</button>
+            <button class="settings-tab"         data-stab="security"     onclick="switchSettingsTab('security')"><span>&#128274;</span> Security</button>
+            <button class="settings-tab"         data-stab="database"     onclick="switchSettingsTab('database');loadDbSchema()"><span>&#128451;</span> Database</button>
+        </div>
+
+        <!-- ── General ── -->
+        <div class="settings-tab-panel" id="stab-general">
+            <div class="settings-group">
+                <div class="settings-group-header">
+                    <div class="settings-group-icon" style="background:rgba(91,127,94,0.12);color:var(--meadow);">&#127968;</div>
+                    <div>
+                        <h3 class="settings-group-title">Business Information</h3>
+                        <p class="settings-group-desc">Public-facing contact details and service coverage</p>
+                    </div>
+                </div>
+                <div class="settings-fields">
+                    <div class="settings-field-row">
+                        <div class="settings-field">
+                            <label class="settings-label">&#127981; Business Name</label>
+                            <input type="text" id="biz_name" class="settings-input" placeholder="Veteran Lawns & Landscapes">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">&#128222; Public Phone</label>
+                            <input type="tel" id="biz_phone" class="settings-input" placeholder="(410) 555-1234">
+                        </div>
+                    </div>
+                    <div class="settings-field-row">
+                        <div class="settings-field">
+                            <label class="settings-label">&#128140; Public Email</label>
+                            <input type="email" id="biz_email" class="settings-input" placeholder="info@example.com">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">&#128205; Service Area</label>
+                            <input type="text" id="biz_service_area" class="settings-input" placeholder="Harford County, MD">
+                        </div>
+                    </div>
+                    <div class="settings-field" style="max-width:480px;">
+                        <label class="settings-label">&#128336; Business Hours</label>
+                        <input type="text" id="biz_hours" class="settings-input" placeholder="Mon–Fri 7am–5pm">
+                    </div>
+                </div>
+                <div class="settings-group-footer">
+                    <button class="btn btn-primary" onclick="saveGeneralSettings()">&#10003; Save General Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Labor & Rates ── -->
+        <div class="settings-tab-panel" id="stab-labor" style="display:none;">
+            <div class="settings-rate-cards">
+                <div class="rate-card">
+                    <div class="rate-card-icon">&#128197;</div>
+                    <div class="rate-card-value" id="rc_lead_days">—</div>
+                    <div class="rate-card-label">Lead Days</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-icon">&#128296;</div>
+                    <div class="rate-card-value" id="rc_labor_std">—</div>
+                    <div class="rate-card-label">Standard Labor</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-icon">&#128081;</div>
+                    <div class="rate-card-value" id="rc_labor_pm">—</div>
+                    <div class="rate-card-label">PM Labor</div>
+                </div>
+                <div class="rate-card">
+                    <div class="rate-card-icon">&#128222;</div>
+                    <div class="rate-card-value" id="rc_labor_support">—</div>
+                    <div class="rate-card-label">Support Labor</div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-group-header">
+                    <div class="settings-group-icon" style="background:rgba(212,168,75,0.15);color:var(--wheat);">&#128176;</div>
+                    <div>
+                        <h3 class="settings-group-title">Edit Rates</h3>
+                        <p class="settings-group-desc">Pricing tiers are managed in the <strong>Pricing</strong> section. These are the base defaults.</p>
+                    </div>
+                </div>
+                <div class="settings-fields">
+                    <div class="settings-field-row">
+                        <div class="settings-field">
+                            <label class="settings-label">Standard Labor Rate ($/hr)</label>
+                            <input type="number" id="cfg_labor_std" class="settings-input" step="0.01">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">PM Labor Rate ($/hr)</label>
+                            <input type="number" id="cfg_labor_pm" class="settings-input" step="0.01">
+                        </div>
+                    </div>
+                    <div class="settings-field-row">
+                        <div class="settings-field">
+                            <label class="settings-label">Support Labor Rate ($/hr)</label>
+                            <input type="number" id="cfg_labor_support" class="settings-input" step="0.01">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">Service Lead Days</label>
+                            <input type="number" id="cfg_lead_days" class="settings-input" min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-group-footer">
+                    <button class="btn btn-primary" onclick="saveLaborSettings()">&#10003; Save Labor &amp; Rates</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Integrations ── -->
+        <div class="settings-tab-panel" id="stab-integrations" style="display:none;">
+            <p class="settings-banner-note">&#128274; Keys are read-only from the server <code>.env</code> file. To update a key, edit <code>.env</code> and restart the app.</p>
+
+            <!-- Stripe -->
+            <div class="integration-card-full">
+                <div class="integration-card-header stripe-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#9889;</div>
+                        <div>
+                            <div class="integration-brand-name">Stripe Payments</div>
+                            <div class="integration-brand-sub">Card processing &amp; subscription billing</div>
+                        </div>
+                    </div>
+                    <div id="stripe-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">SECRET KEY</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="stripe_secret_key" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('stripe_secret_key', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('stripe_secret_key')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">WEBHOOK SECRET</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="stripe_webhook_secret" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('stripe_webhook_secret', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('stripe_webhook_secret')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>STRIPE_SECRET_KEY</code><code>STRIPE_WEBHOOK_SECRET</code></div>
+                </div>
+            </div>
+
+            <!-- FieldRoutes -->
+            <div class="integration-card-full">
+                <div class="integration-card-header fr-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#127807;</div>
+                        <div>
+                            <div class="integration-brand-name">FieldRoutes CRM</div>
+                            <div class="integration-brand-sub">Customer sync &amp; field service management</div>
+                        </div>
+                    </div>
+                    <div id="fr-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">API KEY</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="fr_api_key" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('fr_api_key', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('fr_api_key')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">ACCOUNT ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="fr_account_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('fr_account_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">API URL</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="fr_api_url" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('fr_api_url')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>FIELDROUTES_API_KEY</code><code>FIELDROUTES_ACCOUNT_ID</code><code>FIELDROUTES_API_URL</code></div>
+                </div>
+            </div>
+
+            <!-- SMTP Email -->
+            <div class="integration-card-full">
+                <div class="integration-card-header smtp-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#9993;</div>
+                        <div>
+                            <div class="integration-brand-name">SMTP Email</div>
+                            <div class="integration-brand-sub">Transactional email — payment links &amp; notifications</div>
+                        </div>
+                    </div>
+                    <div id="smtp-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">HOST</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="smtp_host" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('smtp_host')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">PORT</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="smtp_port" class="key-input" readonly placeholder="587">
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">USERNAME</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="smtp_user" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('smtp_user')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">PASSWORD</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="smtp_password" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('smtp_password', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('smtp_password')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">FROM ADDRESS</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="smtp_from" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('smtp_from')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>SMTP_HOST</code><code>SMTP_PORT</code><code>SMTP_USER</code><code>SMTP_PASSWORD</code><code>SMTP_FROM</code></div>
+                </div>
+            </div>
+
+            <!-- Mobile Text Alerts -->
+            <div class="integration-card-full">
+                <div class="integration-card-header mta-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#128241;</div>
+                        <div>
+                            <div class="integration-brand-name">Mobile Text Alerts</div>
+                            <div class="integration-brand-sub">SMS notifications &amp; text marketing campaigns</div>
+                        </div>
+                    </div>
+                    <div id="mta-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">API KEY</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="mta_api_key" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('mta_api_key', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('mta_api_key')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">ACCOUNT ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="mta_account_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('mta_account_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>MTA_API_KEY</code><code>MTA_ACCOUNT_ID</code></div>
+                </div>
+            </div>
+
+            <!-- Zillow API -->
+            <div class="integration-card-full">
+                <div class="integration-card-header zillow-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#127968;</div>
+                        <div>
+                            <div class="integration-brand-name">Zillow API</div>
+                            <div class="integration-brand-sub">Property data, valuations &amp; lot size lookup</div>
+                        </div>
+                    </div>
+                    <div id="zillow-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">API KEY</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="zillow_api_key" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('zillow_api_key', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('zillow_api_key')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">API HOST</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="zillow_api_host" class="key-input" readonly placeholder="zillow-com.p.rapidapi.com">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('zillow_api_host')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>ZILLOW_API_KEY</code><code>ZILLOW_API_HOST</code></div>
+                </div>
+            </div>
+
+            <!-- E-Verify -->
+            <div class="integration-card-full">
+                <div class="integration-card-header everify-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#9989;</div>
+                        <div>
+                            <div class="integration-brand-name">E-Verify</div>
+                            <div class="integration-brand-sub">Employment eligibility verification — USCIS</div>
+                        </div>
+                    </div>
+                    <div id="everify-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">CLIENT ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="everify_client_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('everify_client_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">CLIENT SECRET</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="everify_client_secret" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('everify_client_secret', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('everify_client_secret')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">COMPANY ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="everify_company_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('everify_company_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">API URL</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="everify_api_url" class="key-input" readonly placeholder="https://verify.uscis.gov/api/v1">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('everify_api_url')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>EVERIFY_CLIENT_ID</code><code>EVERIFY_CLIENT_SECRET</code><code>EVERIFY_COMPANY_ID</code><code>EVERIFY_API_URL</code></div>
+                </div>
+            </div>
+
+            <!-- Paychex -->
+            <div class="integration-card-full">
+                <div class="integration-card-header paychex-header">
+                    <div class="integration-brand">
+                        <div class="integration-brand-icon">&#128181;</div>
+                        <div>
+                            <div class="integration-brand-name">Paychex</div>
+                            <div class="integration-brand-sub">Payroll processing &amp; HR management</div>
+                        </div>
+                    </div>
+                    <div id="paychex-badge" class="integration-badge">Checking...</div>
+                </div>
+                <div class="integration-keys">
+                    <div class="key-row">
+                        <span class="key-label">CLIENT ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="paychex_client_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('paychex_client_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">CLIENT SECRET</span>
+                        <div class="key-field-wrap">
+                            <input type="password" id="paychex_client_secret" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('paychex_client_secret', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('paychex_client_secret')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">COMPANY ID</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="paychex_company_id" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('paychex_company_id')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-row">
+                        <span class="key-label">API URL</span>
+                        <div class="key-field-wrap">
+                            <input type="text" id="paychex_api_url" class="key-input" readonly placeholder="https://api.paychex.com">
+                            <button class="key-btn key-btn-copy" onclick="copyKey('paychex_api_url')">&#128203; Copy</button>
+                        </div>
+                    </div>
+                    <div class="key-env-row"><code>PAYCHEX_CLIENT_ID</code><code>PAYCHEX_CLIENT_SECRET</code><code>PAYCHEX_COMPANY_ID</code><code>PAYCHEX_API_URL</code></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Security ── -->
+        <div class="settings-tab-panel" id="stab-security" style="display:none;">
+            <div class="settings-security-row">
+                <div class="settings-group" style="flex:1;min-width:280px;max-width:520px;">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background:rgba(166,93,63,0.1);color:var(--clay);">&#128274;</div>
+                        <div>
+                            <h3 class="settings-group-title">Change Password</h3>
+                            <p class="settings-group-desc">Use a strong password with at least 8 characters</p>
+                        </div>
+                    </div>
+                    <div class="settings-fields">
+                        <div class="settings-field">
+                            <label class="settings-label">Current Password</label>
+                            <input type="password" id="currentPw" class="settings-input" autocomplete="current-password">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">New Password</label>
+                            <input type="password" id="newPw" class="settings-input" autocomplete="new-password">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">Confirm New Password</label>
+                            <input type="password" id="confirmPw" class="settings-input" autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="settings-group-footer">
+                        <button class="btn btn-primary" onclick="changePassword()">&#128274; Update Password</button>
+                    </div>
+                </div>
+
+                <div class="settings-group" style="flex:1;min-width:280px;max-width:520px;">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background:rgba(27,58,47,0.08);color:var(--forest);">&#9202;</div>
+                        <div>
+                            <h3 class="settings-group-title">Session &amp; Token</h3>
+                            <p class="settings-group-desc">Authentication token lifetime</p>
+                        </div>
+                    </div>
+                    <div class="token-display">
+                        <div class="token-value" id="cfg_token_expire">—</div>
+                        <div class="token-label">Token Expiry</div>
+                    </div>
+                    <p class="settings-note" style="margin-top:1rem;">Configured via <code>ACCESS_TOKEN_EXPIRE_MINUTES</code> in <code>.env</code>. Requires app restart.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Database ── -->
+        <div class="settings-tab-panel" id="stab-database" style="display:none;">
+            <p class="settings-banner-note">&#128451; Read-only view of the live database schema and row counts.</p>
+            <div id="dbSchemaContainer"><p class="empty">Loading schema…</p></div>
+        </div>
+
+    </section>
+
 </div><!-- end admin-main -->
 
 <script src="/static/app.js"></script>
@@ -251,10 +791,11 @@ async function boot() {
     const res = await fetch('/auth/me', {headers});
     if (!res.ok) { localStorage.removeItem('token'); window.location.href = '/login'; return; }
     const user = await res.json();
-    if (user.role !== 'admin') { window.location.href = '/dashboard'; return; }
+    if (user.role !== 'admin' && user.role !== 'sales') { window.location.href = '/dashboard'; return; }
     document.getElementById('adminEmail').textContent = user.email;
     loadStats();
     loadRecentQuotes();
+    loadRecentApplications();
     loadCustomers();
     loadUsers();
     loadPayments();
@@ -265,7 +806,8 @@ async function boot() {
 // ── Section switching ─────────────────────────────────
 const sectionTitles = {
     overview: 'Overview', quotes: 'Quotes', customers: 'Customers',
-    users: 'Users', payments: 'Payments', pricing: 'Pricing', calendar: 'Calendar'
+    users: 'Users', payments: 'Payments', pricing: 'Pricing', calendar: 'Calendar',
+    employees: 'Employees', settings: 'Settings'
 };
 
 function switchSection(name) {
@@ -276,6 +818,8 @@ function switchSection(name) {
     document.getElementById('topbarTitle').textContent = sectionTitles[name] || name;
     if (name === 'quotes' && document.getElementById('allQuotesContainer').children[0]?.className === 'loading')
         loadAllQuotes();
+    if (name === 'employees') { loadEmployees(); loadApplications(); }
+    if (name === 'settings') loadSettings();
 }
 
 function toggleSidebar() {
@@ -325,25 +869,84 @@ function displayQuotesTable(quotes, containerId) {
     const container = document.getElementById(containerId);
     if (!quotes.length) { container.innerHTML = '<p class="empty">No quotes found.</p>'; return; }
     container.innerHTML = `
-        <table class="admin-table">
+        <table class="admin-table admin-table-clickable">
             <thead><tr>
-                <th>Name</th><th>Address</th><th>Size</th>
-                <th>Quote</th><th>Status</th><th>Date</th>
+                <th>Name</th><th>Email</th><th>Map Size</th>
+                <th>Quote</th><th>Payment</th><th>Approval</th><th>Date</th>
             </tr></thead>
             <tbody>${quotes.map(q => `
-                <tr>
-                    <td><strong>${q.name}</strong></td>
-                    <td class="address-cell">${q.address}</td>
-                    <td>${q.actual_size ? q.actual_size.toFixed(2) + ' ac' : '-'}</td>
+                <tr onclick='openQuoteReview(${JSON.stringify(q)})' style="cursor:pointer;">
+                    <td><strong>${q.name}</strong><div class="rq-address">${q.address}</div></td>
+                    <td>${q.email || '-'}</td>
+                    <td>${q.map_property_size ? q.map_property_size.toFixed(2) + ' ac' : '—'}</td>
                     <td class="amount">${q.quote > 0 ? '$' + q.quote.toFixed(2) : 'QT RQRD'}</td>
                     <td><span class="status-badge ${q.purchased ? 'status-completed' : 'status-pending-badge'}">${q.purchased ? 'Purchased' : 'Pending'}</span></td>
+                    <td><span class="status-badge ${q.quote_approved ? 'status-active' : 'status-pending-badge'}">${q.quote_approved ? '✓ Approved' : 'Pending'}</span></td>
                     <td>${new Date(q.created_at).toLocaleDateString()}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
 }
 
+// ── Quote Review Modal ─────────────────────────────────
+let _currentQuoteId = null;
+
+function openQuoteReview(q) {
+    _currentQuoteId = q.id;
+    document.getElementById('qm_name').textContent = q.name;
+    document.getElementById('qm_email').textContent = q.email || '-';
+    document.getElementById('qm_phone').textContent = q.phone || '-';
+    document.getElementById('qm_address').textContent = q.address || '-';
+    document.getElementById('qm_claimed_size').value = q.claimed_size ?? '';
+    document.getElementById('qm_map_size').value = q.map_property_size ?? '';
+    document.getElementById('qm_quote').value = q.quote ?? '';
+    const approved = q.quote_approved;
+    document.getElementById('qm_already_approved').style.display = approved ? '' : 'none';
+    document.getElementById('qm_approve_btn').textContent = approved ? '✓ Re-send Payment Link' : '✓ Approve & Send Email';
+    document.getElementById('quoteReviewModal').style.display = 'flex';
+}
+
+function closeQuoteModal(event) {
+    if (!event || event.target === document.getElementById('quoteReviewModal'))
+        document.getElementById('quoteReviewModal').style.display = 'none';
+}
+
+async function saveQuoteEdits() {
+    const body = {
+        map_property_size: parseFloat(document.getElementById('qm_map_size').value) || null,
+        quote: parseFloat(document.getElementById('qm_quote').value) || null,
+    };
+    const res = await fetch(`/dashboard/admin/quotes/${_currentQuoteId}`, {
+        method: 'PATCH', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body),
+    });
+    if (res.ok) { showToast('Quote updated'); loadAllQuotes(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed to update'); }
+}
+
+async function approveAndSend() {
+    const btn = document.getElementById('qm_approve_btn');
+    btn.disabled = true; btn.textContent = 'Processing…';
+    const body = {
+        map_property_size: parseFloat(document.getElementById('qm_map_size').value) || null,
+        quote: parseFloat(document.getElementById('qm_quote').value) || null,
+    };
+    const res = await fetch(`/dashboard/admin/quotes/${_currentQuoteId}/approve-and-send`, {
+        method: 'POST', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body),
+    });
+    btn.disabled = false; btn.textContent = '✓ Approve & Send Email';
+    if (res.ok) {
+        const data = await res.json();
+        showToast(data.email_sent ? 'Quote approved & payment link emailed!' : 'Quote approved (email not configured)');
+        document.getElementById('quoteReviewModal').style.display = 'none';
+        loadAllQuotes();
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Failed to approve and send');
+    }
+}
+
 // ── Customers ─────────────────────────────────────────
+let _customersCache = [];
 async function loadCustomers() {
     const purchased = document.getElementById('customerPurchasedFilter')?.value || '';
     const svc = document.getElementById('customerServiceFilter')?.value || '';
@@ -353,6 +956,7 @@ async function loadCustomers() {
     const res = await fetch(url, {headers});
     if (!res.ok) return;
     const customers = await res.json();
+    _customersCache = customers;
     displayCustomers(customers);
     updateCustomerSummary(customers);
 }
@@ -361,31 +965,20 @@ function displayCustomers(customers) {
     const container = document.getElementById('customersContainer');
     if (!customers.length) { container.innerHTML = '<p class="empty">No customers found.</p>'; return; }
     container.innerHTML = `
-        <table class="admin-table">
+        <table class="admin-table admin-table-clickable">
             <thead><tr>
                 <th>Name</th><th>Email</th><th>Address</th><th>Size</th>
-                <th>Quote</th><th>Purchase</th><th>Service</th><th>Actions</th>
+                <th>Quote</th><th>Purchase</th><th>Service</th>
             </tr></thead>
             <tbody>${customers.map(c => `
-                <tr>
+                <tr onclick="showEditCustomerModal(${c.id})" style="cursor:pointer;">
                     <td><strong>${c.name}</strong></td>
                     <td>${c.email || '-'}</td>
                     <td class="address-cell">${c.address}</td>
                     <td>${c.actual_size ? c.actual_size.toFixed(2) + ' ac' : '-'}</td>
                     <td class="amount">${c.quote > 0 ? '$' + c.quote.toFixed(2) : 'QT RQRD'}</td>
                     <td><span class="status-badge ${c.purchased ? 'status-completed' : 'status-pending-badge'}">${c.purchased ? 'Purchased' : 'Pending'}</span></td>
-                    <td>${c.purchased ? `
-                        <select class="service-select" onchange="updateCustomerService(${c.id}, this.value)">
-                            <option value="pending" ${c.service_status==='pending'?'selected':''}>Pending</option>
-                            <option value="active" ${c.service_status==='active'?'selected':''}>Active</option>
-                            <option value="paused" ${c.service_status==='paused'?'selected':''}>Paused</option>
-                            <option value="cancelled" ${c.service_status==='cancelled'?'selected':''}>Cancelled</option>
-                        </select>` : '<span class="text-muted">—</span>'}
-                    </td>
-                    <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline" onclick="showEditCustomerModal(${c.id},'${c.name.replace(/'/g,"\\'")}','${c.phone}',${c.actual_size||0},${c.quote||0})">Edit</button>
-                        ${!c.purchased ? `<button class="btn btn-sm btn-danger" onclick="deleteCustomer(${c.id})">Delete</button>` : ''}
-                    </td>
+                    <td><span class="status-badge ${c.service_status === 'active' ? 'status-active' : c.service_status === 'cancelled' ? 'status-cancelled' : 'status-pending-badge'}">${c.service_status || 'pending'}</span></td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
@@ -397,51 +990,81 @@ function updateCustomerSummary(customers) {
     document.getElementById('pendingCustomers').textContent = customers.filter(c => c.service_status === 'pending' && c.purchased).length;
 }
 
-async function updateCustomerService(id, status) {
-    const res = await fetch(`/dashboard/admin/customers/${id}?service_status=${status}`, {method:'PATCH', headers});
-    if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); }
-    loadCustomers();
+
+let _currentCustomerId = null;
+
+function showEditCustomerModal(id) {
+    const c = _customersCache.find(x => x.id === id);
+    if (!c) return;
+    _currentCustomerId = id;
+
+    document.getElementById('editName').value = c.name || '';
+    document.getElementById('editEmail').value = c.email || '';
+    document.getElementById('editPhone').value = c.phone || '';
+    document.getElementById('editAddress').value = c.address || '';
+    document.getElementById('editClaimedSize').value = c.claimed_size || '';
+    document.getElementById('editSize').value = c.actual_size || '';
+    document.getElementById('editQuote').value = c.quote || '';
+    document.getElementById('editStartDate').value = c.service_start_date || '';
+    document.getElementById('editFrequency').value = c.service_frequency || 'weekly';
+    document.getElementById('editServiceStatus').value = c.service_status || 'pending';
+
+    // Payment info panel
+    document.getElementById('ec_payment_status').innerHTML = c.purchased
+        ? '<span class="status-badge status-completed">Purchased</span>'
+        : '<span class="status-badge status-pending-badge">Not Purchased</span>';
+    document.getElementById('ec_monthly').textContent = c.quote > 0 ? '$' + c.quote.toFixed(2) + '/mo' : '—';
+    document.getElementById('ec_annual').textContent = c.purchased && c.quote > 0 ? '$' + (c.quote * 7).toFixed(2) + ' (7 mo)' : '—';
+    document.getElementById('ec_start').textContent = c.service_start_date || '—';
+    document.getElementById('ec_stripe').textContent = c.stripe_payment_id || '—';
+    document.getElementById('ec_fr').textContent = c.fieldroutes_customer_id || '—';
+    document.getElementById('ec_created').textContent = c.created_at ? new Date(c.created_at).toLocaleDateString() : '—';
+    document.getElementById('ec_delete_btn').style.display = c.purchased ? 'none' : '';
+
+    document.getElementById('editCustomerModal').style.display = 'flex';
 }
 
-function showEditCustomerModal(id, name, phone, size, quote) {
-    const modal = document.createElement('div');
-    modal.className = 'modal'; modal.id = 'editCustomerModal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header"><h3>Edit Customer</h3><button class="modal-close" onclick="document.getElementById('editCustomerModal').remove()">&times;</button></div>
-            <div class="modal-body">
-                <div class="form-group"><label>Name</label><input type="text" id="editName" value="${name}"></div>
-                <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${phone}"></div>
-                <div class="form-group"><label>Actual Size (acres)</label><input type="number" id="editSize" step="0.01" value="${size}"></div>
-                <div class="form-group"><label>Quote ($)</label><input type="number" id="editQuote" step="0.01" value="${quote}"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="document.getElementById('editCustomerModal').remove()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveCustomer(${id})">Save</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
+function closeCustomerModal(event) {
+    if (!event || event.target === document.getElementById('editCustomerModal'))
+        document.getElementById('editCustomerModal').style.display = 'none';
 }
 
-async function saveCustomer(id) {
-    const name = document.getElementById('editName').value;
-    const phone = document.getElementById('editPhone').value;
+async function saveCustomer() {
+    const id = _currentCustomerId;
+    const params = new URLSearchParams();
+    const name = document.getElementById('editName').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const address = document.getElementById('editAddress').value.trim();
+    const claimedSize = document.getElementById('editClaimedSize').value;
     const size = document.getElementById('editSize').value;
     const quote = document.getElementById('editQuote').value;
-    let url = `/dashboard/admin/customers/${id}?`;
-    if (name) url += `name=${encodeURIComponent(name)}&`;
-    if (phone) url += `phone=${encodeURIComponent(phone)}&`;
-    if (size) url += `actual_size=${size}&`;
-    if (quote) url += `quote=${quote}&`;
-    const res = await fetch(url, {method:'PATCH', headers});
-    if (res.ok) { document.getElementById('editCustomerModal')?.remove(); loadCustomers(); }
-    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+    const startDate = document.getElementById('editStartDate').value;
+    const frequency = document.getElementById('editFrequency').value;
+    const svcStatus = document.getElementById('editServiceStatus').value;
+
+    if (name) params.append('name', name);
+    if (email) params.append('email', email);
+    if (phone) params.append('phone', phone);
+    if (address) params.append('address', address);
+    if (claimedSize) params.append('claimed_size', claimedSize);
+    if (size) params.append('actual_size', size);
+    if (quote) params.append('quote', quote);
+    if (startDate) params.append('service_start_date', startDate);
+    if (frequency) params.append('service_frequency', frequency);
+    if (svcStatus) params.append('service_status', svcStatus);
+
+    const res = await fetch(`/dashboard/admin/customers/${id}?${params}`, {method:'PATCH', headers});
+    if (res.ok) {
+        document.getElementById('editCustomerModal').style.display = 'none';
+        loadCustomers(); showToast('Customer updated');
+    } else { const e = await res.json(); alert(e.detail || 'Failed to save'); }
 }
 
-async function deleteCustomer(id) {
+async function deleteCustomer() {
     if (!confirm('Delete this customer record?')) return;
-    const res = await fetch(`/dashboard/admin/customers/${id}`, {method:'DELETE', headers});
-    if (res.ok) loadCustomers();
+    const res = await fetch(`/dashboard/admin/customers/${_currentCustomerId}`, {method:'DELETE', headers});
+    if (res.ok) { document.getElementById('editCustomerModal').style.display = 'none'; loadCustomers(); }
     else { const e = await res.json(); alert(e.detail || 'Failed'); }
 }
 
@@ -469,6 +1092,7 @@ function displayUsers(users) {
                     <td>
                         <select class="role-select" onchange="updateUserRole(${u.id}, this.value)">
                             <option value="customer" ${u.role==='customer'?'selected':''}>Customer</option>
+                            <option value="sales" ${u.role==='sales'?'selected':''}>Sales</option>
                             <option value="pm" ${u.role==='pm'?'selected':''}>PM</option>
                             <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
                         </select>
@@ -696,6 +1320,527 @@ function closeDayDetail() { document.getElementById('dayDetailPanel').style.disp
 document.getElementById('adminPrevMonth')?.addEventListener('click', () => { adminMonth--; if(adminMonth<1){adminMonth=12;adminYear--;} loadAdminCalendar(); });
 document.getElementById('adminNextMonth')?.addEventListener('click', () => { adminMonth++; if(adminMonth>12){adminMonth=1;adminYear++;} loadAdminCalendar(); });
 
+// ── Employees ─────────────────────────────────────────
+const empPositionLabels = {lawn_service: 'Lawn Service', sales: 'Sales', support: 'Support', manager: 'Manager'};
+const empTypeLabels = {full_time: 'Full Time', part_time: 'Part Time', contractor: 'Contractor'};
+const empStatusColors = {active: 'status-active', inactive: 'status-pending-badge', terminated: 'status-inactive'};
+let _employeesCache = [];
+
+function switchEmpTab(tab) {
+    document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('empPanel-staff').style.display = tab === 'staff' ? '' : 'none';
+    document.getElementById('empPanel-applications').style.display = tab === 'applications' ? '' : 'none';
+}
+
+async function loadEmployees() {
+    const position = document.getElementById('empPositionFilter')?.value || '';
+    const empStatus = document.getElementById('empStatusFilter')?.value || '';
+    let url = '/employees/?';
+    if (position) url += `position=${position}&`;
+    if (empStatus) url += `emp_status=${empStatus}&`;
+    const res = await fetch(url, {headers});
+    if (!res.ok) return;
+    const emps = await res.json();
+    _employeesCache = emps;
+    displayEmployees(emps);
+    document.getElementById('totalEmployees').textContent = emps.length;
+    document.getElementById('activeEmployees').textContent = emps.filter(e => e.status === 'active').length;
+    document.getElementById('ftEmployees').textContent = emps.filter(e => e.employment_type === 'full_time').length;
+}
+
+const workAuthLabels = {citizen: 'U.S. Citizen', national: 'Noncitizen National', permanent_resident: 'Permanent Resident', work_visa: 'Work Visa'};
+
+function displayEmployees(emps) {
+    const container = document.getElementById('employeesContainer');
+    if (!emps.length) { container.innerHTML = '<p class="empty">No employees found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table admin-table-clickable">
+            <thead><tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Position</th>
+                <th>Type</th><th>Hire Date</th><th>Rate</th><th>Status</th>
+            </tr></thead>
+            <tbody>${emps.map(e => `
+                <tr onclick='showEditEmployeeModal(${e.id})' style="cursor:pointer;">
+                    <td><small class="text-muted">${e.employee_id || '—'}</small></td>
+                    <td><strong>${e.name}</strong>${e.notes ? '<br><small class="text-muted">Has notes</small>' : ''}</td>
+                    <td>${e.email}</td>
+                    <td>${empPositionLabels[e.position] || e.position}</td>
+                    <td>${empTypeLabels[e.employment_type] || e.employment_type}</td>
+                    <td>${e.hire_date || '—'}</td>
+                    <td>${e.hourly_rate ? '$' + e.hourly_rate.toFixed(2) + '/hr' : '—'}</td>
+                    <td><span class="status-badge ${empStatusColors[e.status] || ''}">${e.status}</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+function showAddEmployeeModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal'; modal.id = 'addEmployeeModal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header"><h3>Add Employee</h3><button class="modal-close" onclick="document.getElementById('addEmployeeModal').remove()">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Employee ID</label><input type="text" id="newEmpId" placeholder="EMP-001"></div>
+                    <div class="form-group"><label>Full Name *</label><input type="text" id="newEmpName" placeholder="Jane Smith"></div>
+                </div>
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Email *</label><input type="email" id="newEmpEmail" placeholder="jane@example.com"></div>
+                    <div class="form-group"><label>Phone *</label><input type="tel" id="newEmpPhone" placeholder="(410) 555-1234"></div>
+                </div>
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Position *</label>
+                        <select id="newEmpPosition">
+                            <option value="lawn_service">Lawn Service</option>
+                            <option value="sales">Sales</option>
+                            <option value="support">Support</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Employment Type</label>
+                        <select id="newEmpType">
+                            <option value="full_time">Full Time</option>
+                            <option value="part_time">Part Time</option>
+                            <option value="contractor">Contractor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Hire Date</label><input type="date" id="newEmpHireDate"></div>
+                    <div class="form-group"><label>Hourly Rate ($)</label><input type="number" id="newEmpRate" step="0.01" placeholder="18.00"></div>
+                </div>
+                <div class="modal-section-title">Work Authorization (I-9)</div>
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Authorized to Work in U.S.?</label>
+                        <select id="newEmpAuthorized">
+                            <option value="">Not recorded</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Requires Sponsorship?</label>
+                        <select id="newEmpSponsorship">
+                            <option value="">Not recorded</option>
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row-modal">
+                    <div class="form-group"><label>Work Auth Status</label>
+                        <select id="newEmpWorkAuth">
+                            <option value="">Not recorded</option>
+                            <option value="citizen">U.S. Citizen</option>
+                            <option value="national">U.S. Noncitizen National</option>
+                            <option value="permanent_resident">Lawful Permanent Resident</option>
+                            <option value="work_visa">Alien Authorized to Work</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>SSN (optional)</label><input type="password" id="newEmpSsn" placeholder="XXX-XX-XXXX" autocomplete="off"></div>
+                </div>
+                <div class="form-group"><label>Notes</label><input type="text" id="newEmpNotes" placeholder="Optional notes"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="document.getElementById('addEmployeeModal').remove()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveNewEmployee()">Add Employee</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function saveNewEmployee() {
+    const name = document.getElementById('newEmpName').value.trim();
+    const email = document.getElementById('newEmpEmail').value.trim();
+    const phone = document.getElementById('newEmpPhone').value.trim();
+    if (!name || !email || !phone) { alert('Name, email, and phone are required.'); return; }
+    const authVal = document.getElementById('newEmpAuthorized').value;
+    const sponsorVal = document.getElementById('newEmpSponsorship').value;
+    const body = {
+        employee_id: document.getElementById('newEmpId').value.trim() || null,
+        name, email, phone,
+        position: document.getElementById('newEmpPosition').value,
+        employment_type: document.getElementById('newEmpType').value,
+        hire_date: document.getElementById('newEmpHireDate').value || null,
+        hourly_rate: document.getElementById('newEmpRate').value ? parseFloat(document.getElementById('newEmpRate').value) : null,
+        authorized_to_work: authVal === '' ? null : authVal === 'true',
+        requires_sponsorship: sponsorVal === '' ? null : sponsorVal === 'true',
+        work_auth_status: document.getElementById('newEmpWorkAuth').value || null,
+        ssn: document.getElementById('newEmpSsn').value.trim() || null,
+        notes: document.getElementById('newEmpNotes').value.trim() || null,
+    };
+    const res = await fetch('/employees/', {method: 'POST', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    if (res.ok) { document.getElementById('addEmployeeModal').remove(); loadEmployees(); showToast('Employee added'); }
+    else { const e = await res.json(); alert(e.detail || 'Failed to add employee'); }
+}
+
+let _currentEmpId = null;
+
+function showEditEmployeeModal(id) {
+    const e = _employeesCache.find(x => x.id === id);
+    if (!e) return;
+    _currentEmpId = id;
+    document.getElementById('editEmpId').value = e.employee_id || '';
+    document.getElementById('editEmpName').value = e.name || '';
+    document.getElementById('editEmpEmail').value = e.email || '';
+    document.getElementById('editEmpPhone').value = e.phone || '';
+    document.getElementById('editEmpPosition').value = e.position || 'lawn_service';
+    document.getElementById('editEmpType').value = e.employment_type || 'full_time';
+    document.getElementById('editEmpStatus').value = e.status || 'active';
+    document.getElementById('editEmpHireDate').value = e.hire_date || '';
+    document.getElementById('editEmpRate').value = e.hourly_rate || '';
+    document.getElementById('editEmpNotes').value = e.notes || '';
+    document.getElementById('editEmpAuthorized').value = e.authorized_to_work === null ? '' : String(e.authorized_to_work);
+    document.getElementById('editEmpSponsorship').value = e.requires_sponsorship === null ? '' : String(e.requires_sponsorship);
+    document.getElementById('editEmpWorkAuth').value = e.work_auth_status || '';
+    document.getElementById('editEmpSsn').value = '';
+    const terminated = e.status === 'terminated';
+    document.getElementById('emp_suspend_btn').style.display = e.status === 'inactive' ? 'none' : '';
+    document.getElementById('emp_terminate_btn').style.display = terminated ? 'none' : '';
+    document.getElementById('empEditModal').style.display = 'flex';
+}
+
+function closeEmpModal(event) {
+    if (!event || event.target === document.getElementById('empEditModal'))
+        document.getElementById('empEditModal').style.display = 'none';
+}
+
+async function saveEmployee() {
+    const params = new URLSearchParams();
+    const empId = document.getElementById('editEmpId').value.trim();
+    const name = document.getElementById('editEmpName').value.trim();
+    const email = document.getElementById('editEmpEmail').value.trim();
+    const phone = document.getElementById('editEmpPhone').value.trim();
+    const hireDate = document.getElementById('editEmpHireDate').value;
+    const rate = document.getElementById('editEmpRate').value;
+    const notes = document.getElementById('editEmpNotes').value.trim();
+    const authVal = document.getElementById('editEmpAuthorized').value;
+    const sponsorVal = document.getElementById('editEmpSponsorship').value;
+    const workAuth = document.getElementById('editEmpWorkAuth').value;
+    const ssn = document.getElementById('editEmpSsn').value.trim();
+    params.append('emp_id', empId);
+    if (name) params.append('name', name);
+    if (email) params.append('email', email);
+    if (phone) params.append('phone', phone);
+    params.append('position', document.getElementById('editEmpPosition').value);
+    params.append('employment_type', document.getElementById('editEmpType').value);
+    params.append('emp_status', document.getElementById('editEmpStatus').value);
+    if (hireDate) params.append('hire_date', hireDate);
+    if (rate) params.append('hourly_rate', rate);
+    if (notes) params.append('notes', notes);
+    if (authVal !== '') params.append('authorized_to_work', authVal === 'true');
+    if (sponsorVal !== '') params.append('requires_sponsorship', sponsorVal === 'true');
+    if (workAuth) params.append('work_auth_status', workAuth);
+    if (ssn) params.append('ssn', ssn);
+    const res = await fetch(`/employees/${_currentEmpId}?${params}`, {method: 'PATCH', headers});
+    if (res.ok) { document.getElementById('empEditModal').style.display = 'none'; loadEmployees(); showToast('Employee updated'); }
+    else { const e = await res.json(); alert(e.detail || 'Failed to save'); }
+}
+
+async function suspendEmployee() {
+    if (!confirm('Suspend this employee? They will be set to inactive.')) return;
+    const res = await fetch(`/employees/${_currentEmpId}?emp_status=inactive`, {method: 'PATCH', headers});
+    if (res.ok) { document.getElementById('empEditModal').style.display = 'none'; loadEmployees(); showToast('Employee suspended'); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function terminateEmployee() {
+    if (!confirm('Terminate this employee? This marks them as terminated.')) return;
+    const res = await fetch(`/employees/${_currentEmpId}`, {method: 'DELETE', headers});
+    if (res.ok) { document.getElementById('empEditModal').style.display = 'none'; loadEmployees(); showToast('Employee terminated'); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+// ── Applications ──────────────────────────────────────
+const positionLabels = {lawn_service: 'Lawn Service Team', sales: 'Sales', support: 'Support Team'};
+const appStatusColors = {new: 'status-pending-badge', reviewing: 'status-active', contacted: 'status-completed', hired: 'status-active', rejected: 'status-cancelled'};
+let _appsCache = [];
+let _currentAppId = null;
+
+async function loadRecentApplications() {
+    const res = await fetch('/careers/applications?limit=5', {headers});
+    if (!res.ok) return;
+    const apps = await res.json();
+    const container = document.getElementById('recentApplications');
+    if (!apps.length) { container.innerHTML = '<p class="empty">No applications yet.</p>'; return; }
+    container.innerHTML = apps.map(a => `
+        <div class="recent-quote-row">
+            <div>
+                <strong>${a.name}</strong>
+                <span class="rq-address">${positionLabels[a.position] || a.position}</span>
+            </div>
+            <span class="status-badge ${appStatusColors[a.status] || ''}">${a.status}</span>
+        </div>
+    `).join('');
+}
+
+async function loadApplications() {
+    const position = document.getElementById('appPositionFilter')?.value || '';
+    const appStatus = document.getElementById('appStatusFilter')?.value || '';
+    let url = '/careers/applications?';
+    if (position) url += `position=${position}&`;
+    if (appStatus) url += `app_status=${appStatus}&`;
+    const res = await fetch(url, {headers});
+    if (!res.ok) return;
+    const apps = await res.json();
+    _appsCache = apps;
+    displayApplications(apps);
+    document.getElementById('totalApps').textContent = apps.length;
+    document.getElementById('newApps').textContent = apps.filter(a => a.status === 'new').length;
+    document.getElementById('hiredApps').textContent = apps.filter(a => a.status === 'hired').length;
+}
+
+function displayApplications(apps) {
+    const container = document.getElementById('applicationsContainer');
+    if (!apps.length) { container.innerHTML = '<p class="empty">No applications found.</p>'; return; }
+    container.innerHTML = `
+        <table class="admin-table admin-table-clickable">
+            <thead><tr>
+                <th>Name</th><th>Email</th><th>Position</th>
+                <th>Work Auth</th><th>Available</th><th>Submitted</th><th>Status</th>
+            </tr></thead>
+            <tbody>${apps.map(a => `
+                <tr onclick='openAppReview(${JSON.stringify(a)})' style="cursor:pointer;">
+                    <td><strong>${a.name}</strong>${a.message ? '<br><small class="text-muted">Has message</small>' : ''}</td>
+                    <td>${a.email}</td>
+                    <td>${positionLabels[a.position] || a.position}</td>
+                    <td>${a.authorized_to_work ? '&#10003;' : '&#10007;'} <small>${(a.work_auth_status||'').replace(/_/g,' ')}</small></td>
+                    <td>${a.availability_date || '—'}</td>
+                    <td>${new Date(a.created_at).toLocaleDateString()}</td>
+                    <td><span class="status-badge ${appStatusColors[a.status] || ''}">${a.status}</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+// ── Application Review Modal ───────────────────────────
+function openAppReview(a) {
+    _currentAppId = a.id;
+    document.getElementById('ar_name').textContent = a.name;
+    document.getElementById('ar_email').textContent = a.email;
+    document.getElementById('ar_phone').textContent = a.phone;
+    document.getElementById('ar_position').textContent = positionLabels[a.position] || a.position;
+    document.getElementById('ar_auth').textContent = a.authorized_to_work ? '✓ Authorized' : '✗ Not Authorized';
+    document.getElementById('ar_sponsorship').textContent = a.requires_sponsorship ? 'Yes' : 'No';
+    document.getElementById('ar_work_auth').textContent = (a.work_auth_status || '').replace(/_/g, ' ');
+    document.getElementById('ar_available').textContent = a.availability_date || '—';
+    document.getElementById('ar_submitted').textContent = new Date(a.created_at).toLocaleDateString();
+    document.getElementById('ar_message').textContent = a.message || '';
+    document.getElementById('ar_message_block').style.display = a.message ? '' : 'none';
+    document.getElementById('ar_status').value = a.status;
+    const hired = a.status === 'hired';
+    document.getElementById('ar_hire_btn').disabled = hired;
+    document.getElementById('ar_hire_btn').textContent = hired ? '✓ Already Hired' : '✓ Hire & Send Email';
+    document.getElementById('appReviewModal').style.display = 'flex';
+}
+
+function closeAppModal(event) {
+    if (!event || event.target === document.getElementById('appReviewModal'))
+        document.getElementById('appReviewModal').style.display = 'none';
+}
+
+async function submitAppStatus() {
+    const newStatus = document.getElementById('ar_status').value;
+    const res = await fetch(`/careers/applications/${_currentAppId}?app_status=${newStatus}`, {method: 'PATCH', headers});
+    if (res.ok) { showToast('Status updated'); document.getElementById('appReviewModal').style.display = 'none'; loadApplications(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function hireApplicant() {
+    const btn = document.getElementById('ar_hire_btn');
+    btn.disabled = true; btn.textContent = 'Processing…';
+    const res = await fetch(`/careers/applications/${_currentAppId}/hire`, {method: 'POST', headers});
+    if (res.ok) {
+        const data = await res.json();
+        showToast(data.email_sent ? '🎉 Hired & congratulation email sent!' : 'Hired (email not configured)');
+        document.getElementById('appReviewModal').style.display = 'none';
+        loadApplications(); loadEmployees();
+    } else {
+        const e = await res.json();
+        btn.disabled = false; btn.textContent = '✓ Hire & Send Email';
+        alert(e.detail || 'Failed to hire');
+    }
+}
+
+// ── Settings ──────────────────────────────────────────
+let _settingsData = null;
+
+async function loadDbSchema() {
+    const container = document.getElementById('dbSchemaContainer');
+    container.innerHTML = '<p class="empty">Loading…</p>';
+    const res = await fetch('/dashboard/admin/db-schema', {headers});
+    if (!res.ok) { container.innerHTML = '<p class="empty">Failed to load schema.</p>'; return; }
+    const { tables } = await res.json();
+
+    container.innerHTML = tables.map(t => `
+        <div class="db-table-card">
+            <div class="db-table-header">
+                <span class="db-table-name">&#128451; ${t.name}</span>
+                <span class="db-row-count">${t.row_count} row${t.row_count !== 1 ? 's' : ''}</span>
+            </div>
+            <table class="db-schema-table">
+                <thead><tr><th>#</th><th>Column</th><th>Type</th><th>PK</th><th>Not Null</th><th>Default</th></tr></thead>
+                <tbody>${t.columns.map(c => `
+                    <tr class="${c.pk ? 'db-col-pk' : ''}">
+                        <td class="db-col-cid">${c.cid}</td>
+                        <td class="db-col-name">${c.pk ? '&#128273; ' : ''}${c.name}</td>
+                        <td class="db-col-type">${c.type}</td>
+                        <td class="db-col-flag">${c.pk ? '&#10003;' : ''}</td>
+                        <td class="db-col-flag">${c.not_null ? '&#10003;' : ''}</td>
+                        <td class="db-col-default">${c.default !== null ? c.default : '<span class="db-null">NULL</span>'}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            ${t.indexes.length ? `<div class="db-indexes">Indexes: ${t.indexes.map(i => `<span class="db-index-badge${i.unique ? ' db-index-unique' : ''}">${i.name}</span>`).join('')}</div>` : ''}
+        </div>`).join('');
+}
+
+function switchSettingsTab(tab) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.stab === tab));
+    document.querySelectorAll('.settings-tab-panel').forEach(p => p.style.display = p.id === 'stab-' + tab ? '' : 'none');
+}
+
+async function loadSettings() {
+    const res = await fetch('/dashboard/admin/settings', {headers});
+    if (!res.ok) return;
+    _settingsData = await res.json();
+    const { business: biz, integrations: int, app } = _settingsData;
+
+    // General tab
+    document.getElementById('biz_name').value = biz.business_name || '';
+    document.getElementById('biz_phone').value = biz.business_phone || '';
+    document.getElementById('biz_email').value = biz.business_email || '';
+    document.getElementById('biz_service_area').value = biz.service_area || '';
+    document.getElementById('biz_hours').value = biz.business_hours || '';
+
+    // Labor & Rates tab
+    document.getElementById('cfg_lead_days').value = biz.service_lead_days;
+    document.getElementById('cfg_labor_std').value = biz.labor_rate_standard;
+    document.getElementById('cfg_labor_pm').value = biz.labor_rate_pm;
+    document.getElementById('cfg_labor_support').value = biz.labor_rate_support;
+    // Rate stat cards
+    document.getElementById('rc_lead_days').textContent = biz.service_lead_days + 'd';
+    document.getElementById('rc_labor_std').textContent = '$' + biz.labor_rate_standard + '/hr';
+    document.getElementById('rc_labor_pm').textContent = '$' + biz.labor_rate_pm + '/hr';
+    document.getElementById('rc_labor_support').textContent = '$' + biz.labor_rate_support + '/hr';
+
+    // Integrations tab
+    const stripe = int.stripe;
+    const fr = int.fieldroutes;
+    const smtp = int.smtp;
+    const mta = int.mta;
+    setBadge('stripe-badge', stripe.configured);
+    setBadge('fr-badge', fr.configured);
+    setBadge('smtp-badge', smtp.configured);
+    setBadge('mta-badge', mta.configured);
+    document.getElementById('stripe_secret_key').value = stripe.secret_key || '';
+    document.getElementById('stripe_webhook_secret').value = stripe.webhook_secret || '';
+    document.getElementById('fr_api_key').value = fr.api_key || '';
+    document.getElementById('fr_account_id').value = fr.account_id || '';
+    document.getElementById('fr_api_url').value = fr.api_url || '';
+    document.getElementById('smtp_host').value = smtp.host || '';
+    document.getElementById('smtp_port').value = smtp.port || '';
+    document.getElementById('smtp_user').value = smtp.user || '';
+    document.getElementById('smtp_password').value = smtp.password || '';
+    document.getElementById('smtp_from').value = smtp.from_address || '';
+    document.getElementById('mta_api_key').value = mta.api_key || '';
+    document.getElementById('mta_account_id').value = mta.account_id || '';
+    const zillow = int.zillow;
+    setBadge('zillow-badge', zillow.configured);
+    document.getElementById('zillow_api_key').value = zillow.api_key || '';
+    document.getElementById('zillow_api_host').value = zillow.api_host || '';
+    const everify = int.everify;
+    setBadge('everify-badge', everify.configured);
+    document.getElementById('everify_client_id').value = everify.client_id || '';
+    document.getElementById('everify_client_secret').value = everify.client_secret || '';
+    document.getElementById('everify_company_id').value = everify.company_id || '';
+    document.getElementById('everify_api_url').value = everify.api_url || '';
+    const paychex = int.paychex;
+    setBadge('paychex-badge', paychex.configured);
+    document.getElementById('paychex_client_id').value = paychex.client_id || '';
+    document.getElementById('paychex_client_secret').value = paychex.client_secret || '';
+    document.getElementById('paychex_company_id').value = paychex.company_id || '';
+    document.getElementById('paychex_api_url').value = paychex.api_url || '';
+
+    // Security tab
+    document.getElementById('cfg_token_expire').textContent = app.token_expire_minutes + ' minutes';
+}
+
+function setBadge(id, ok) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = ok ? '✓ Connected' : '✗ Not configured';
+    el.classList.toggle('badge-ok', ok);
+    el.classList.toggle('badge-err', !ok);
+}
+
+function toggleReveal(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    const hidden = inp.type === 'password';
+    inp.type = hidden ? 'text' : 'password';
+    btn.textContent = hidden ? 'Hide' : 'Reveal';
+}
+
+function copyKey(inputId) {
+    const val = document.getElementById(inputId).value;
+    if (!val) { showToast('Nothing to copy'); return; }
+    navigator.clipboard.writeText(val).then(() => showToast('Copied to clipboard'));
+}
+
+async function saveGeneralSettings() {
+    const body = {
+        business_name: document.getElementById('biz_name').value.trim(),
+        business_phone: document.getElementById('biz_phone').value.trim(),
+        business_email: document.getElementById('biz_email').value.trim(),
+        service_area: document.getElementById('biz_service_area').value.trim(),
+        business_hours: document.getElementById('biz_hours').value.trim(),
+        service_lead_days: _settingsData?.business?.service_lead_days ?? 3,
+        labor_rate_standard: _settingsData?.business?.labor_rate_standard ?? 45,
+        labor_rate_pm: _settingsData?.business?.labor_rate_pm ?? 75,
+        labor_rate_support: _settingsData?.business?.labor_rate_support ?? 35,
+    };
+    const res = await fetch('/dashboard/admin/settings', {method: 'PUT', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    if (res.ok) showToast('General settings saved');
+    else { const e = await res.json(); alert(e.detail || 'Failed to save'); }
+}
+
+async function saveLaborSettings() {
+    const body = {
+        ..._settingsData?.business,
+        labor_rate_standard: parseFloat(document.getElementById('cfg_labor_std').value) || 45,
+        labor_rate_pm: parseFloat(document.getElementById('cfg_labor_pm').value) || 75,
+        labor_rate_support: parseFloat(document.getElementById('cfg_labor_support').value) || 35,
+        service_lead_days: parseInt(document.getElementById('cfg_lead_days').value) || 3,
+    };
+    const res = await fetch('/dashboard/admin/settings', {method: 'PUT', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    if (res.ok) { showToast('Labor & rates saved'); loadSettings(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed to save'); }
+}
+
+async function changePassword() {
+    const current = document.getElementById('currentPw').value;
+    const newPw = document.getElementById('newPw').value;
+    const confirm = document.getElementById('confirmPw').value;
+    if (!current || !newPw) { alert('Please fill in all fields.'); return; }
+    if (newPw !== confirm) { alert('New passwords do not match.'); return; }
+    if (newPw.length < 8) { alert('New password must be at least 8 characters.'); return; }
+    const res = await fetch('/dashboard/admin/change-password', {
+        method: 'POST',
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: JSON.stringify({current_password: current, new_password: newPw}),
+    });
+    if (res.ok) {
+        document.getElementById('currentPw').value = '';
+        document.getElementById('newPw').value = '';
+        document.getElementById('confirmPw').value = '';
+        showToast('Password updated successfully');
+    } else {
+        const e = await res.json();
+        alert(e.detail || 'Failed to update password');
+    }
+}
+
 // ── Toast ─────────────────────────────────────────────
 function showToast(msg) {
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
@@ -708,5 +1853,236 @@ function logout() { localStorage.removeItem('token'); window.location.href = '/'
 
 boot();
 </script>
+
+<!-- ── Quote Review Modal ── -->
+<div id="quoteReviewModal" class="qr-overlay" style="display:none;" onclick="closeQuoteModal(event)">
+    <div class="qr-box">
+        <div class="qr-header">
+            <h3 class="qr-title">&#128269; Review &amp; Approve Quote</h3>
+            <button class="qr-close" onclick="closeQuoteModal()">&times;</button>
+        </div>
+        <div class="qr-body">
+            <!-- Customer info -->
+            <div class="qr-info-grid">
+                <div class="qr-info-item"><span class="qr-label">Name</span><span id="qm_name" class="qr-value">-</span></div>
+                <div class="qr-info-item"><span class="qr-label">Email</span><span id="qm_email" class="qr-value">-</span></div>
+                <div class="qr-info-item"><span class="qr-label">Phone</span><span id="qm_phone" class="qr-value">-</span></div>
+                <div class="qr-info-item qr-full"><span class="qr-label">Address</span><span id="qm_address" class="qr-value">-</span></div>
+            </div>
+
+            <div class="qr-divider"></div>
+
+            <!-- Editable fields -->
+            <p class="qr-section-title">Size &amp; Pricing <span class="qr-hint">(editable)</span></p>
+            <div class="qr-field-grid">
+                <div class="qr-field">
+                    <label class="settings-label">Claimed Size (acres)</label>
+                    <input type="number" id="qm_claimed_size" class="settings-input" readonly step="0.0001" style="opacity:.6;">
+                </div>
+                <div class="qr-field">
+                    <label class="settings-label">Zillow Map Size (acres)</label>
+                    <input type="number" id="qm_map_size" class="settings-input" step="0.0001">
+                </div>
+                <div class="qr-field">
+                    <label class="settings-label">Monthly Quote ($)</label>
+                    <input type="number" id="qm_quote" class="settings-input" step="0.01">
+                </div>
+            </div>
+
+            <div id="qm_already_approved" class="qr-approved-notice" style="display:none;">
+                &#10003; This quote has already been approved. You can re-send the payment link with updated details.
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button class="btn btn-outline" onclick="closeQuoteModal()">Cancel</button>
+            <button class="btn btn-outline" onclick="saveQuoteEdits()">&#128190; Save Edits</button>
+            <button class="btn btn-primary" id="qm_approve_btn" onclick="approveAndSend()">&#10003; Approve &amp; Send Email</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Application Review Modal ── -->
+<div id="appReviewModal" class="qr-overlay" style="display:none;" onclick="closeAppModal(event)">
+    <div class="qr-box" style="max-width:660px;">
+        <div class="qr-header" style="background:linear-gradient(135deg,#1b3a2f,#3a6642);">
+            <h3 class="qr-title">&#128203; Application Review</h3>
+            <button class="qr-close" onclick="closeAppModal()">&times;</button>
+        </div>
+        <div class="qr-body">
+            <div class="qr-info-grid">
+                <div class="qr-info-item"><span class="qr-label">Name</span><span id="ar_name" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Email</span><span id="ar_email" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Phone</span><span id="ar_phone" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Position</span><span id="ar_position" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Work Authorization</span><span id="ar_auth" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Needs Sponsorship</span><span id="ar_sponsorship" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Auth Status</span><span id="ar_work_auth" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Available From</span><span id="ar_available" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Submitted</span><span id="ar_submitted" class="qr-value">—</span></div>
+            </div>
+            <div id="ar_message_block" class="qr-divider" style="margin-top:16px;"></div>
+            <div id="ar_message_block" style="display:none;margin-bottom:16px;">
+                <p class="qr-section-title" style="margin-bottom:6px;">Applicant Message</p>
+                <p id="ar_message" style="margin:0;color:#444;font-size:14px;line-height:1.6;background:#f9fbf7;padding:12px 14px;border-radius:8px;border:1px solid #e4e8e0;"></p>
+            </div>
+            <div class="qr-divider"></div>
+            <p class="qr-section-title">Status</p>
+            <div class="qr-field" style="max-width:220px;">
+                <select id="ar_status" class="settings-input">
+                    <option value="new">New</option>
+                    <option value="reviewing">Reviewing</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="hired">Hired</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button class="btn btn-danger" onclick="submitAppStatus('rejected')" style="margin-right:auto;">&#10007; Reject</button>
+            <button class="btn btn-outline" onclick="closeAppModal()">Cancel</button>
+            <button class="btn btn-outline" onclick="submitAppStatus(document.getElementById('ar_status').value)">&#128190; Save Status</button>
+            <button class="btn btn-primary" id="ar_hire_btn" onclick="hireApplicant()">&#10003; Hire &amp; Send Email</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Edit Employee Modal ── -->
+<div id="empEditModal" class="qr-overlay" style="display:none;" onclick="closeEmpModal(event)">
+    <div class="qr-box" style="max-width:700px;">
+        <div class="qr-header" style="background:linear-gradient(135deg,#2c3e50,#4a5568);">
+            <h3 class="qr-title">&#128101; Edit Employee</h3>
+            <button class="qr-close" onclick="closeEmpModal()">&times;</button>
+        </div>
+        <div class="qr-body">
+            <p class="qr-section-title">Details <span class="qr-hint">(editable)</span></p>
+            <div class="qr-field-grid">
+                <div class="qr-field"><label class="settings-label">Employee ID</label><input type="text" id="editEmpId" class="settings-input" placeholder="EMP-001"></div>
+                <div class="qr-field"><label class="settings-label">Full Name</label><input type="text" id="editEmpName" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Email</label><input type="email" id="editEmpEmail" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Phone</label><input type="tel" id="editEmpPhone" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Position</label>
+                    <select id="editEmpPosition" class="settings-input">
+                        <option value="lawn_service">Lawn Service</option>
+                        <option value="sales">Sales</option>
+                        <option value="support">Support</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Employment Type</label>
+                    <select id="editEmpType" class="settings-input">
+                        <option value="full_time">Full Time</option>
+                        <option value="part_time">Part Time</option>
+                        <option value="contractor">Contractor</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Status</label>
+                    <select id="editEmpStatus" class="settings-input">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="terminated">Terminated</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Hire Date</label><input type="date" id="editEmpHireDate" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Hourly Rate ($)</label><input type="number" id="editEmpRate" class="settings-input" step="0.01"></div>
+                <div class="qr-field"><label class="settings-label">Notes</label><input type="text" id="editEmpNotes" class="settings-input"></div>
+            </div>
+            <div class="qr-divider"></div>
+            <p class="qr-section-title">Work Authorization (I-9)</p>
+            <div class="qr-field-grid">
+                <div class="qr-field"><label class="settings-label">Authorized to Work in U.S.?</label>
+                    <select id="editEmpAuthorized" class="settings-input">
+                        <option value="">Not recorded</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Requires Sponsorship?</label>
+                    <select id="editEmpSponsorship" class="settings-input">
+                        <option value="">Not recorded</option>
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Work Auth Status</label>
+                    <select id="editEmpWorkAuth" class="settings-input">
+                        <option value="">Not recorded</option>
+                        <option value="citizen">U.S. Citizen</option>
+                        <option value="national">U.S. Noncitizen National</option>
+                        <option value="permanent_resident">Lawful Permanent Resident</option>
+                        <option value="work_visa">Alien Authorized to Work</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">SSN (leave blank to keep)</label><input type="password" id="editEmpSsn" class="settings-input" autocomplete="off" placeholder="••••••••••"></div>
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button id="emp_suspend_btn" class="btn" style="background:#f59e0b;color:#fff;margin-right:auto;" onclick="suspendEmployee()">&#9208; Suspend</button>
+            <button id="emp_terminate_btn" class="btn btn-danger" onclick="terminateEmployee()">&#128683; Terminate</button>
+            <button class="btn btn-outline" onclick="closeEmpModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEmployee()">&#10003; Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Edit Customer Modal ── -->
+<div id="editCustomerModal" class="qr-overlay" style="display:none;" onclick="closeCustomerModal(event)">
+    <div class="qr-box" style="max-width:720px;">
+        <div class="qr-header">
+            <h3 class="qr-title">&#9998; Edit Customer</h3>
+            <button class="qr-close" onclick="closeCustomerModal()">&times;</button>
+        </div>
+        <div class="qr-body">
+            <!-- Editable fields -->
+            <p class="qr-section-title">Contact <span class="qr-hint">(editable)</span></p>
+            <div class="qr-field-grid">
+                <div class="qr-field"><label class="settings-label">Full Name</label><input type="text" id="editName" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Email</label><input type="email" id="editEmail" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Phone</label><input type="tel" id="editPhone" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Address</label><input type="text" id="editAddress" class="settings-input"></div>
+            </div>
+
+            <div class="qr-divider"></div>
+            <p class="qr-section-title">Size &amp; Pricing <span class="qr-hint">(editable)</span></p>
+            <div class="qr-field-grid">
+                <div class="qr-field"><label class="settings-label">Claimed Size (acres)</label><input type="number" id="editClaimedSize" class="settings-input" step="0.01"></div>
+                <div class="qr-field"><label class="settings-label">Actual Size (acres)</label><input type="number" id="editSize" class="settings-input" step="0.01"></div>
+                <div class="qr-field"><label class="settings-label">Monthly Quote ($)</label><input type="number" id="editQuote" class="settings-input" step="0.01"></div>
+                <div class="qr-field"><label class="settings-label">Service Start Date</label><input type="date" id="editStartDate" class="settings-input"></div>
+                <div class="qr-field"><label class="settings-label">Frequency</label>
+                    <select id="editFrequency" class="settings-input">
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Biweekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="qr-field"><label class="settings-label">Service Status</label>
+                    <select id="editServiceStatus" class="settings-input">
+                        <option value="pending">Pending</option>
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="qr-divider"></div>
+            <p class="qr-section-title">Payment Info</p>
+            <div class="ec-info-grid">
+                <div class="ec-info-row"><span class="qr-label">Payment Status</span><span id="ec_payment_status">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">Monthly Amount</span><span id="ec_monthly" class="qr-value">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">Season Value (7 mo)</span><span id="ec_annual" class="qr-value">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">Service Start</span><span id="ec_start" class="qr-value">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">Stripe Session</span><span id="ec_stripe" class="qr-value" style="font-size:0.78rem;word-break:break-all;">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">FieldRoutes ID</span><span id="ec_fr" class="qr-value">—</span></div>
+                <div class="ec-info-row"><span class="qr-label">Submitted</span><span id="ec_created" class="qr-value">—</span></div>
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button id="ec_delete_btn" class="btn btn-danger" onclick="deleteCustomer()" style="margin-right:auto;">&#128465; Delete</button>
+            <button class="btn btn-outline" onclick="closeCustomerModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveCustomer()">&#10003; Save Changes</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

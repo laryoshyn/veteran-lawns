@@ -260,7 +260,37 @@ async def _handle_subscription_cancelled(subscription: dict, db: AsyncSession) -
 
 def _get_base_url() -> str:
     """Get the base URL for redirects."""
-    # In production, this should come from settings
     if settings.debug:
         return "http://localhost:8000"
     return "https://veteranlawnsandlandscapes.com"
+
+
+async def create_admin_checkout_url(customer: Customer) -> str:
+    """Create a Stripe Checkout URL for a customer — no ownership check (admin use only)."""
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": f"Monthly Lawn Care - {customer.actual_size:.2f} acres",
+                        "description": f"Weekly mowing service for {customer.address}",
+                    },
+                    "unit_amount": int(customer.quote * 100),
+                    "recurring": {"interval": "month"},
+                },
+                "quantity": 1,
+            }
+        ],
+        mode="subscription",
+        success_url=f"{_get_base_url()}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{_get_base_url()}/payment/cancel",
+        customer_email=customer.email,
+        expires_at=int(__import__("time").time()) + 86400,  # 24-hour link
+        metadata={
+            "customer_id": str(customer.id),
+            "quote_amount": str(customer.quote),
+        },
+    )
+    return checkout_session.url

@@ -97,5 +97,17 @@ def require_role(required_role: str):
     return role_checker
 
 
+async def require_staff(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Dependency that allows admin or sales roles."""
+    if current_user.role not in ("admin", "sales"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions",
+        )
+    return current_user
+
+
 # Convenience dependencies
 require_admin = require_role("admin")
