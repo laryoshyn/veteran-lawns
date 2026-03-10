@@ -2737,3 +2737,208 @@ footer p {
         max-width: 120px;
     }
 }
+
+/* ==========================================================================
+   PAGE MODE SWITCHING (lawn ↔ careers)
+   ========================================================================== */
+
+/* Default: lawn mode — careers content hidden */
+#pageRoot .mode-careers-section,
+#pageRoot .hc-careers,
+#pageRoot .hv-careers,
+#pageRoot .tb-careers,
+#pageRoot .cta-careers {
+    display: none;
+    opacity: 0;
+}
+
+#pageRoot .mode-lawn-section,
+#pageRoot .hc-lawn,
+#pageRoot .hv-lawn,
+#pageRoot .tb-lawn,
+#pageRoot .cta-lawn {
+    display: block;
+    opacity: 1;
+}
+
+#pageRoot .tb-lawn  { display: flex; }
+#pageRoot .hv-lawn  { display: block; }
+
+/* Careers mode — swap everything */
+#pageRoot.page-mode-careers .mode-lawn-section,
+#pageRoot.page-mode-careers .hc-lawn,
+#pageRoot.page-mode-careers .hv-lawn,
+#pageRoot.page-mode-careers .tb-lawn,
+#pageRoot.page-mode-careers .cta-lawn {
+    display: none !important;
+    opacity: 0;
+}
+
+#pageRoot.page-mode-careers .mode-careers-section {
+    display: block;
+    animation: fadeInUp 0.45s var(--ease-out) both;
+}
+
+#pageRoot.page-mode-careers .hc-careers {
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 0.4s var(--ease-out) 0.05s both;
+}
+
+#pageRoot.page-mode-careers .hv-careers {
+    display: block;
+    animation: fadeInRight 0.5s var(--ease-out) 0.1s both;
+}
+
+#pageRoot.page-mode-careers .tb-careers {
+    display: flex;
+    animation: fadeInUp 0.35s var(--ease-out) both;
+}
+
+#pageRoot.page-mode-careers .cta-careers {
+    display: block;
+    animation: fadeInUp 0.4s var(--ease-out) both;
+}
+
+/* CTA section dual content — .cta-section already has text-align:center */
+.cta-lawn .btn-hero,
+.cta-careers .btn-hero {
+    display: inline-flex;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Hero visual panel ──────────────────────────────────────────────── */
+.hero-visual {
+    position: relative;
+    animation: fadeInRight 1s var(--ease-out) 0.3s both;
+}
+
+.hv-lawn,
+.hv-careers {
+    height: 480px;
+}
+
+.hero-visual .hv-lawn img,
+.hero-visual .hv-careers img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    display: block;
+}
+
+/* Golden frame on lawn photo */
+.hv-lawn::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: 10px;
+    bottom: 10px;
+    border: 2px solid var(--wheat);
+    border-radius: var(--radius-xl);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Golden frame on careers image */
+.hv-careers {
+    position: relative;
+}
+.hv-careers::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: 10px;
+    bottom: 10px;
+    border: 2px solid var(--wheat);
+    border-radius: var(--radius-xl);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ── Hero badge careers variant ────────────────────────────────────── */
+.hero-badge--careers {
+    background: rgba(212, 168, 75, 0.2);
+    border-color: rgba(212, 168, 75, 0.5);
+}
+.hero-badge--careers::before {
+    content: '⚒';
+}
+
+/* ── CTA careers button ────────────────────────────────────────────── */
+.btn-hero--careers {
+    background: var(--wheat);
+    color: var(--forest-deep);
+}
+.btn-hero--careers:hover {
+    background: var(--wheat-light);
+}
+
+/* ── Pricing / sidebar careers variants ────────────────────────────── */
+.pricing-card--careers .pricing-header {
+    background: linear-gradient(135deg, var(--forest-deep), var(--forest));
+}
+
+.guarantee-box--careers {
+    background: var(--cream);
+    border-color: var(--meadow);
+}
+
+.guarantee-box--careers h4 {
+    color: var(--forest);
+}
+
+.guarantee-box--careers p {
+    color: var(--stone-light);
+}
+
+/* ── Service cards careers variant ─────────────────────────────────── */
+.service-card--careers {
+    border-top: 3px solid var(--wheat);
+}
+
+/* ── Select / textarea in careers form ─────────────────────────────── */
+.quote-form select,
+.quote-form textarea {
+    width: 100%;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid var(--cream-dark);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--charcoal);
+    background: var(--cream);
+    transition: all 0.3s var(--ease-out);
+    appearance: none;
+}
+
+.quote-form select:focus,
+.quote-form textarea:focus {
+    outline: none;
+    border-color: var(--sage);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(61, 90, 71, 0.08);
+}
+
+.quote-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ── Responsive adjustments ────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .hero-visual::after,
+    .hv-lawn::after,
+    .hv-careers::after {
+        display: none;
+    }
+    .hv-lawn,
+    .hv-careers {
+        height: 320px;
+    }
+}

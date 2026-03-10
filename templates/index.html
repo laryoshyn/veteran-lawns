@@ -3,42 +3,75 @@
 {% block title %}Veteran Lawns & Landscapes | Professional Lawn Care in Harford County, MD{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="hero">
+
+<!-- =====================================================================
+     PAGE WRAPPER — mode class drives all content switching
+     ===================================================================== -->
+<div id="pageRoot" class="page-mode-lawn">
+
+<!-- =====================================================================
+     HERO
+     ===================================================================== -->
+<section class="hero hero-switchable">
     <div class="hero-inner">
+
+        <!-- LEFT: content panel -->
         <div class="hero-content">
-            <div class="hero-badge">Veteran Owned & Operated</div>
-            <h1>Professional Lawn Care You Can Trust</h1>
-            <p>Serving Harford County, Maryland with pride. Get your free instant quote in seconds.</p>
-            <a href="#quote-form" class="btn btn-hero">Get Free Quote</a>
+
+            <!-- LAWN mode content -->
+            <div class="hc-lawn">
+                <div class="hero-badge">&#9733; Veteran Owned &amp; Operated</div>
+                <h1>Professional Lawn Care<br>You Can Trust</h1>
+                <p>Serving Harford County, Maryland with pride.<br>Get your free instant quote in seconds.</p>
+                <a href="#quote-form" class="btn btn-hero">Get Free Quote</a>
+            </div>
+
+            <!-- CAREERS mode content -->
+            <div class="hc-careers">
+                <div class="hero-badge hero-badge--careers">&#127981; Now Hiring — Harford County</div>
+                <h1>Build Something<br>That Lasts</h1>
+                <p>Join a veteran-owned team where your work is seen, your growth is real, and the people beside you have your back.</p>
+                <a href="#careers-form" class="btn btn-hero btn-hero--careers">Apply Today</a>
+            </div>
         </div>
-        <div class="hero-image">
-            <img src="/images/2.jpg" alt="Professional lawn care service with American flag" loading="eager">
+
+        <!-- RIGHT: image panel -->
+        <div class="hero-visual">
+
+            <!-- LAWN mode: real photo -->
+            <div class="hv-lawn">
+                <img src="/images/2.jpg" alt="Professional lawn care service" loading="eager">
+            </div>
+
+            <!-- CAREERS mode: photo -->
+            <div class="hv-careers">
+                <img src="/images/join.png" alt="Join our veteran lawn care team" loading="lazy">
+            </div>
         </div>
-    </div>
+
+    </div><!-- hero-inner -->
 </section>
 
-<!-- Trust Indicators -->
+<!-- =====================================================================
+     TRUST BAR
+     ===================================================================== -->
 <section class="trust-bar">
-    <div class="trust-item">
-        <span class="trust-icon">&#9733;</span>
-        <span>5-Star Rated</span>
-    </div>
-    <div class="trust-item">
-        <span class="trust-icon">&#10003;</span>
-        <span>Licensed & Insured</span>
-    </div>
-    <div class="trust-item">
-        <span class="trust-icon">&#9881;</span>
-        <span>Satisfaction Guaranteed</span>
-    </div>
-    <div class="trust-item">
-        <span class="trust-icon">&#128197;</span>
-        <span>Flexible Scheduling</span>
-    </div>
+    <!-- LAWN trust items -->
+    <div class="trust-item tb-lawn"><span class="trust-icon">&#9733;</span><span>5-Star Rated</span></div>
+    <div class="trust-item tb-lawn"><span class="trust-icon">&#10003;</span><span>Licensed &amp; Insured</span></div>
+    <div class="trust-item tb-lawn"><span class="trust-icon">&#9881;</span><span>Satisfaction Guaranteed</span></div>
+    <div class="trust-item tb-lawn"><span class="trust-icon">&#128197;</span><span>Flexible Scheduling</span></div>
+
+    <!-- CAREERS trust items -->
+    <div class="trust-item tb-careers"><span class="trust-icon">&#127881;</span><span>Competitive Pay</span></div>
+    <div class="trust-item tb-careers"><span class="trust-icon">&#127981;</span><span>Veteran-Friendly Culture</span></div>
+    <div class="trust-item tb-careers"><span class="trust-icon">&#128200;</span><span>Career Growth Paths</span></div>
+    <div class="trust-item tb-careers"><span class="trust-icon">&#128101;</span><span>Team Environment</span></div>
 </section>
 
-<!-- Service Type Selection -->
+<!-- =====================================================================
+     SERVICE TYPE SELECTOR
+     ===================================================================== -->
 <section class="service-selection" id="service-type">
     <div class="section-header">
         <h2>Choose Your Service</h2>
@@ -72,7 +105,7 @@
             <h3>Join Our Team</h3>
             <p>Build a career with a veteran-owned company</p>
             <ul>
-                <li>Competitive pay & benefits</li>
+                <li>Competitive pay &amp; benefits</li>
                 <li>Multiple positions open</li>
                 <li>Growth opportunities</li>
             </ul>
@@ -81,13 +114,14 @@
     </div>
 </section>
 
-<!-- Quote Form Section -->
-<section class="quote-section" id="quote-form">
+<!-- =====================================================================
+     QUOTE FORM (lawn care)
+     ===================================================================== -->
+<section class="quote-section mode-lawn-section" id="quote-form">
     <div class="section-header">
         <h2>Get Your Free Instant Quote</h2>
         <p>No obligation. No registration required. Just honest pricing.</p>
     </div>
-
     <div class="quote-container">
         <div class="quote-form-wrapper">
             <form id="quoteForm" class="quote-form">
@@ -101,12 +135,10 @@
                         <input type="email" id="email" name="email" required placeholder="john@example.com">
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="street_address">Street Address *</label>
                     <input type="text" id="street_address" name="street_address" required placeholder="123 Main Street">
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label for="city">City *</label>
@@ -117,7 +149,6 @@
                         <input type="text" id="zipcode" name="zipcode" pattern="^\d{5}(-\d{4})?$" required placeholder="21014">
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label for="phone">Phone Number *</label>
@@ -128,16 +159,12 @@
                         <input type="number" id="claimed_size" name="claimed_size" step="0.1" min="0.1" max="10" required placeholder="0.5">
                     </div>
                 </div>
-
                 <p class="form-note">We verify property sizes with Harford County records for accurate pricing.</p>
-
                 <button type="submit" class="btn btn-primary btn-large" id="submitBtn">
                     <span id="btnText">Get My Free Quote</span>
                     <span id="btnLoader" class="loader" style="display:none;"></span>
                 </button>
             </form>
-
-            <!-- Quote Result -->
             <div id="quoteResult" class="quote-result" style="display:none;">
                 <div class="result-header">
                     <span class="result-icon">&#10003;</span>
@@ -163,7 +190,6 @@
                 </div>
             </div>
         </div>
-
         <div class="quote-sidebar">
             <div class="pricing-card">
                 <div class="pricing-header">
@@ -184,7 +210,6 @@
                     <li><span class="check">&#10003;</span> No contracts required</li>
                 </ul>
             </div>
-
             <div class="guarantee-box">
                 <div class="guarantee-icon">&#128170;</div>
                 <h4>100% Satisfaction Guarantee</h4>
@@ -194,13 +219,14 @@
     </div>
 </section>
 
-<!-- Join Our Team / Careers Section -->
-<section class="quote-section" id="careers-form" style="display:none;">
+<!-- =====================================================================
+     CAREERS / APPLICATION FORM
+     ===================================================================== -->
+<section class="quote-section mode-careers-section" id="careers-form">
     <div class="section-header">
-        <h2>Join Veteran Lawns & Landscapes</h2>
+        <h2>Join Veteran Lawns &amp; Landscapes</h2>
         <p>We're growing and looking for dedicated professionals. Veterans encouraged to apply.</p>
     </div>
-
     <div class="quote-container">
         <div class="quote-form-wrapper">
             <form id="applicationForm" class="quote-form">
@@ -214,7 +240,6 @@
                         <input type="email" id="app_email" name="email" required placeholder="john@example.com">
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label for="app_phone">Phone Number *</label>
@@ -225,17 +250,16 @@
                         <select id="app_position" name="position" required>
                             <option value="">Select a position...</option>
                             <option value="lawn_service">Lawn Service Team</option>
+                            <option value="crew_lead">Crew Lead</option>
                             <option value="sales">Sales</option>
                             <option value="support">Support Team</option>
                         </select>
                     </div>
                 </div>
-
                 <div class="form-section-divider"><span>Work Authorization (I-9)</span></div>
-
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="app_authorized">Are you legally authorized to work in the United States? *</label>
+                        <label for="app_authorized">Authorized to work in the US? *</label>
                         <select id="app_authorized" name="authorized_to_work" required>
                             <option value="">Select...</option>
                             <option value="true">Yes, I am authorized</option>
@@ -243,7 +267,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="app_sponsorship">Will you require employer sponsorship for a work visa? *</label>
+                        <label for="app_sponsorship">Require employer sponsorship? *</label>
                         <select id="app_sponsorship" name="requires_sponsorship" required>
                             <option value="">Select...</option>
                             <option value="false">No</option>
@@ -251,7 +275,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label for="app_work_auth_status">Work Authorization Status *</label>
@@ -268,29 +291,24 @@
                         <input type="date" id="app_availability" name="availability_date">
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="app_message">Tell us about yourself (Optional)</label>
                     <textarea id="app_message" name="message" rows="4" placeholder="Relevant experience, certifications, why you want to join our team..."></textarea>
                 </div>
-
-                <p class="form-note">We are an equal opportunity employer. All applicants considered without regard to race, color, religion, sex, national origin, age, disability, or veteran status.</p>
-
+                <p class="form-note">Equal opportunity employer. All applicants considered without regard to race, color, religion, sex, national origin, age, disability, or veteran status.</p>
                 <button type="submit" class="btn btn-primary btn-large" id="appSubmitBtn">
                     <span id="appBtnText">Submit Application</span>
                     <span id="appBtnLoader" class="loader" style="display:none;"></span>
                 </button>
             </form>
-
-            <!-- Application Result -->
             <div id="applicationResult" class="quote-result" style="display:none;">
                 <div class="result-header">
                     <span class="result-icon">&#10003;</span>
                     <h3>Application Received!</h3>
                 </div>
                 <div class="result-body">
-                    <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 1.5rem 0;">
-                        Thank you for your interest in joining Veteran Lawns & Landscapes. Our team will review your application and reach out within 3–5 business days.
+                    <p style="color:rgba(255,255,255,0.9);font-size:1.1rem;margin:1.5rem 0;">
+                        Thank you for your interest in joining Veteran Lawns &amp; Landscapes. Our team will review your application and reach out within 3–5 business days.
                     </p>
                 </div>
                 <div class="result-actions">
@@ -298,9 +316,8 @@
                 </div>
             </div>
         </div>
-
         <div class="quote-sidebar">
-            <div class="pricing-card">
+            <div class="pricing-card pricing-card--careers">
                 <div class="pricing-header">
                     <h3>Why Join Our Team?</h3>
                 </div>
@@ -313,9 +330,8 @@
                     <li><span class="check">&#10003;</span> Local, outdoor work</li>
                 </ul>
             </div>
-
-            <div class="guarantee-box">
-                <div class="guarantee-icon">&#127881;</div>
+            <div class="guarantee-box guarantee-box--careers">
+                <div class="guarantee-icon">&#127981;</div>
                 <h4>Equal Opportunity Employer</h4>
                 <p>We welcome applicants from all backgrounds. Veterans are strongly encouraged to apply.</p>
             </div>
@@ -323,8 +339,10 @@
     </div>
 </section>
 
-<!-- Services Section -->
-<section class="services-section" id="lawn-services-section">
+<!-- =====================================================================
+     BOTTOM SERVICES GRID — lawn mode
+     ===================================================================== -->
+<section class="services-section mode-lawn-section" id="lawn-services-section">
     <div class="section-header">
         <h2>Our Services</h2>
         <p>Comprehensive lawn care solutions for Harford County homeowners</p>
@@ -337,7 +355,7 @@
         </div>
         <div class="service-card">
             <div class="service-icon">&#9986;</div>
-            <h3>Edging & Trimming</h3>
+            <h3>Edging &amp; Trimming</h3>
             <p>Clean, crisp edges along driveways, walkways, and flower beds.</p>
         </div>
         <div class="service-card">
@@ -353,28 +371,31 @@
     </div>
 </section>
 
-<section class="services-section" id="careers-benefits-section" style="display:none;">
+<!-- =====================================================================
+     BOTTOM SERVICES GRID — careers mode
+     ===================================================================== -->
+<section class="services-section mode-careers-section" id="careers-benefits-section">
     <div class="section-header">
         <h2>Why Work With Us</h2>
         <p>Join a veteran-owned team that takes care of its people</p>
     </div>
     <div class="services-grid">
-        <div class="service-card">
+        <div class="service-card service-card--careers">
             <div class="service-icon">&#128176;</div>
             <h3>Competitive Pay</h3>
             <p>Above-market hourly rates with regular reviews and performance bonuses.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card service-card--careers">
             <div class="service-icon">&#128197;</div>
             <h3>Flexible Scheduling</h3>
             <p>Full-time, part-time, and contractor arrangements to fit your life.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card service-card--careers">
             <div class="service-icon">&#127981;</div>
             <h3>Veteran-Friendly Culture</h3>
             <p>Veteran-owned and operated. We understand military experience and value your service.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card service-card--careers">
             <div class="service-icon">&#128200;</div>
             <h3>Career Growth</h3>
             <p>Clear advancement paths from crew member to team lead and beyond.</p>
@@ -382,93 +403,60 @@
     </div>
 </section>
 
-<!-- Testimonials Section -->
-<section class="testimonials-section" style="display:none;">
-    <div class="section-header">
-        <h2>What Our Customers Say</h2>
-        <p>Join hundreds of satisfied homeowners in Harford County</p>
+<!-- =====================================================================
+     CTA
+     ===================================================================== -->
+<section class="cta-section">
+    <div class="cta-lawn mode-lawn-section">
+        <h2>Ready for a Beautiful Lawn?</h2>
+        <a href="#quote-form" class="btn btn-hero">Get Your Free Quote Now</a>
     </div>
-    <div class="testimonials-grid">
-        <div class="testimonial-card">
-            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-            <p>"Best lawn service we've ever had. Always on time, always professional. My lawn has never looked better!"</p>
-            <div class="testimonial-author">
-                <strong>Sarah M.</strong>
-                <span>Bel Air, MD</span>
-            </div>
-        </div>
-        <div class="testimonial-card">
-            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-            <p>"As a veteran myself, I appreciate their commitment to service. Fair pricing, great results."</p>
-            <div class="testimonial-author">
-                <strong>Mike T.</strong>
-                <span>Fallston, MD</span>
-            </div>
-        </div>
-        <div class="testimonial-card">
-            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-            <p>"The instant quote feature is amazing! No waiting around for estimates. Exactly what I was looking for."</p>
-            <div class="testimonial-author">
-                <strong>Jennifer L.</strong>
-                <span>Aberdeen, MD</span>
-            </div>
-        </div>
+    <div class="cta-careers mode-careers-section">
+        <h2>Ready to Join the Team?</h2>
+        <a href="#careers-form" class="btn btn-hero btn-hero--careers">Apply Now</a>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="cta-section">
-    <h2>Ready for a Beautiful Lawn?</h2>
-    <a href="#quote-form" class="btn btn-hero">Get Your Free Quote Now</a>
-</section>
+</div><!-- #pageRoot -->
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Service type selection
+// ─── Mode switching ────────────────────────────────────────────────────────
+let _currentMode = 'lawn';
+
 function selectService(type) {
-    const lawncareCard = document.getElementById('lawncare-card');
-    const landscapingCard = document.getElementById('landscaping-card');
-    const careersCard = document.getElementById('careers-card');
-    const quoteSection = document.getElementById('quote-form');
-    const careersSection = document.getElementById('careers-form');
+    document.getElementById('lawncare-card').classList.remove('active');
+    document.getElementById('landscaping-card').classList.remove('active');
+    document.getElementById('careers-card').classList.remove('active');
 
-    lawncareCard.classList.remove('active');
-    landscapingCard.classList.remove('active');
-    careersCard.classList.remove('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    const lawnServices = document.getElementById('lawn-services-section');
-    const careersServices = document.getElementById('careers-benefits-section');
+    if (type === 'landscaping') {
+        document.getElementById('landscaping-card').classList.add('active');
+        setTimeout(() => { window.location.href = '/landscaping'; }, 300);
+        return;
+    }
+
+    const root = document.getElementById('pageRoot');
 
     if (type === 'lawncare') {
-        lawncareCard.classList.add('active');
-        if (quoteSection) quoteSection.style.display = 'block';
-        if (careersSection) careersSection.style.display = 'none';
-        if (lawnServices) lawnServices.style.display = '';
-        if (careersServices) careersServices.style.display = 'none';
-    } else if (type === 'landscaping') {
-        landscapingCard.classList.add('active');
-        window.location.href = '/landscaping';
+        document.getElementById('lawncare-card').classList.add('active');
+        root.className = 'page-mode-lawn';
+        _currentMode = 'lawn';
     } else if (type === 'careers') {
-        careersCard.classList.add('active');
-        if (quoteSection) quoteSection.style.display = 'none';
-        if (careersSection) {
-            careersSection.style.display = 'block';
-            careersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        if (lawnServices) lawnServices.style.display = 'none';
-        if (careersServices) careersServices.style.display = '';
+        document.getElementById('careers-card').classList.add('active');
+        root.className = 'page-mode-careers';
+        _currentMode = 'careers';
     }
 }
 
+// ─── Quote form submit ─────────────────────────────────────────────────────
 document.getElementById('quoteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
-
-    // Show loading state
     submitBtn.disabled = true;
     btnText.textContent = 'Getting Your Quote...';
     btnLoader.style.display = 'inline-block';
@@ -489,12 +477,9 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(formData)
         });
-
         if (response.ok) {
             const result = await response.json();
-
             document.getElementById('resultActualSize').textContent = result.actual_size.toFixed(2);
-
             const quoteEl = document.getElementById('resultQuote');
             const priceNoteEl = document.querySelector('.price-note');
             if (result.quote_required) {
@@ -510,29 +495,20 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
                 document.getElementById('resultActualSize').textContent =
                     `${result.actual_size.toFixed(2)} (${result.tier_label})`;
             }
-
             const verifiedEl = document.getElementById('sizeVerified');
             if (result.size_verified) {
                 verifiedEl.innerHTML = '<span class="verified">&#10003; Size verified with county records</span>';
             } else {
                 verifiedEl.innerHTML = '<span class="unverified">Based on your estimate</span>';
             }
-
-            // Hide form, show result
             document.getElementById('quoteForm').style.display = 'none';
             document.getElementById('quoteResult').style.display = 'block';
-
-            // Scroll to result
             document.getElementById('quoteResult').scrollIntoView({behavior: 'smooth', block: 'center'});
         } else {
             const error = await response.json();
             let message = 'Failed to get quote. Please try again.';
             if (error.detail) {
-                if (Array.isArray(error.detail)) {
-                    message = error.detail.map(d => d.msg).join('\n');
-                } else {
-                    message = error.detail;
-                }
+                message = Array.isArray(error.detail) ? error.detail.map(d => d.msg).join('\n') : error.detail;
             }
             alert(message);
         }
@@ -540,20 +516,18 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
         alert('Connection error. Please check your internet and try again.');
         console.error(err);
     } finally {
-        // Reset button
         submitBtn.disabled = false;
         btnText.textContent = 'Get My Free Quote';
         btnLoader.style.display = 'none';
     }
 });
 
+// ─── Application form submit ───────────────────────────────────────────────
 document.getElementById('applicationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const submitBtn = document.getElementById('appSubmitBtn');
     const btnText = document.getElementById('appBtnText');
     const btnLoader = document.getElementById('appBtnLoader');
-
     submitBtn.disabled = true;
     btnText.textContent = 'Submitting...';
     btnLoader.style.display = 'inline-block';
@@ -576,7 +550,6 @@ document.getElementById('applicationForm').addEventListener('submit', async (e) 
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(formData),
         });
-
         if (response.ok) {
             document.getElementById('applicationForm').style.display = 'none';
             document.getElementById('applicationResult').style.display = 'block';
@@ -585,9 +558,7 @@ document.getElementById('applicationForm').addEventListener('submit', async (e) 
             const error = await response.json();
             let message = 'Failed to submit application. Please try again.';
             if (error.detail) {
-                message = Array.isArray(error.detail)
-                    ? error.detail.map(d => d.msg).join('\n')
-                    : error.detail;
+                message = Array.isArray(error.detail) ? error.detail.map(d => d.msg).join('\n') : error.detail;
             }
             alert(message);
         }
@@ -600,5 +571,11 @@ document.getElementById('applicationForm').addEventListener('submit', async (e) 
         btnLoader.style.display = 'none';
     }
 });
+
+// ─── Activate careers mode if navigated from another page ─────────────────
+if (window.location.search === '?careers') {
+    selectService('careers');
+    history.replaceState(null, '', '/');
+}
 </script>
 {% endblock %}

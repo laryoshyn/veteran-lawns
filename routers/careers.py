@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-VALID_POSITIONS = {"lawn_service", "sales", "support"}
+VALID_POSITIONS = {"lawn_service", "crew_lead", "sales", "support"}
 VALID_WORK_AUTH = {"citizen", "national", "permanent_resident", "work_visa"}
 
 
@@ -151,6 +151,7 @@ async def update_application_status(
 
 _POSITION_LABELS = {
     "lawn_service": "Lawn Service Team",
+    "crew_lead": "Crew Lead",
     "sales": "Sales",
     "support": "Support Team",
 }
