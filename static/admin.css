@@ -902,8 +902,8 @@ body.admin-body::before {
     background: linear-gradient(135deg, #6a1b9a 0%, #ab47bc 100%);
 }
 
-.zillow-header {
-    background: linear-gradient(135deg, #0074e4 0%, #00aaff 100%);
+.openai-header {
+    background: linear-gradient(135deg, #10a37f 0%, #1a7f64 100%);
 }
 
 .everify-header {

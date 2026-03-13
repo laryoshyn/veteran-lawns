@@ -21,9 +21,8 @@ from schemas import (
     ServiceScheduleResponse,
     ServiceStartRequest,
 )
-from services.maryland_api import fetch_actual_size
+from services.openai_size import fetch_property_sizes
 from services.pricing import calculate_price, load_rates_raw
-from services.zillow import fetch_property_size
 
 logger = logging.getLogger(__name__)
 
@@ -61,42 +60,28 @@ async def create_estimate(
     Create a lawn care quote estimate.
 
     No registration required - just provide your email.
-    Looks up actual property size from Maryland Property Data API
-    and calculates monthly service cost.
+    Uses OpenAI to estimate grass area and calculates monthly service cost.
 
     Rate limited to 10 requests per minute.
     """
-    # Try to fetch actual size from Maryland API
-    actual_size, parcel_id = await fetch_actual_size(
-        quote_request.street_address,
-        quote_request.city,
-        quote_request.zipcode,
-    )
-
-    # Determine if size was verified via API
-    size_verified = actual_size is not None
-
-    # Fall back to claimed size if API lookup failed
-    if actual_size is None:
-        actual_size = quote_request.claimed_size
-        logger.info(
-            f"Using claimed size for {quote_request.street_address}: "
-            f"{quote_request.claimed_size} acres"
-        )
-
-    # Look up price tier for this lot size
-    monthly_quote, quote_required, tier_label = calculate_price(actual_size)
-
-    # Build full address string
     full_address = (
         f"{quote_request.street_address}, "
         f"{quote_request.city}, MD {quote_request.zipcode}"
     )
 
-    # Fetch Zillow property size (non-blocking on error)
-    map_size = await fetch_property_size(full_address)
+    # Fetch lot size and grass area via Zillow + satellite imagery
+    lot_size, grass_area = await fetch_property_sizes(full_address)
+    size_verified = grass_area is not None
 
-    # Store customer/quote record (quote=0 when a manual quote is required)
+    if grass_area is not None:
+        actual_size = grass_area
+        logger.info(f"AI grass area for {full_address}: {grass_area} acres (lot: {lot_size})")
+    else:
+        actual_size = quote_request.claimed_size
+        logger.info(f"Using claimed size for {full_address}: {actual_size} acres")
+
+    monthly_quote, quote_required, tier_label = calculate_price(actual_size)
+
     customer = Customer(
         user_id=user_id,
         name=quote_request.name,
@@ -106,8 +91,9 @@ async def create_estimate(
         claimed_size=quote_request.claimed_size,
         actual_size=actual_size,
         quote=monthly_quote or 0.0,
-        parcel_id=parcel_id,
-        map_property_size=map_size,
+        parcel_id=None,
+        lot_size_acres=lot_size,
+        map_property_size=grass_area,
     )
     db.add(customer)
     await db.commit()

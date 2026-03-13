@@ -69,7 +69,8 @@ class Customer(Base):
     # Quote approval (set by admin/sales before sending payment link)
     quote_approved: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Zillow property size lookup
+    # AI property size lookup (Zillow lot size + satellite grass area)
+    lot_size_acres: Mapped[float | None] = mapped_column(Float, nullable=True)
     map_property_size: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # FieldRoutes integration

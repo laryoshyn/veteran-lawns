@@ -598,35 +598,28 @@
                 </div>
             </div>
 
-            <!-- Zillow API -->
+            <!-- OpenAI -->
             <div class="integration-card-full">
-                <div class="integration-card-header zillow-header">
+                <div class="integration-card-header openai-header">
                     <div class="integration-brand">
-                        <div class="integration-brand-icon">&#127968;</div>
+                        <div class="integration-brand-icon">&#129504;</div>
                         <div>
-                            <div class="integration-brand-name">Zillow API</div>
-                            <div class="integration-brand-sub">Property data, valuations &amp; lot size lookup</div>
+                            <div class="integration-brand-name">OpenAI</div>
+                            <div class="integration-brand-sub">AI-powered grass area estimation for quotes &amp; landscaping</div>
                         </div>
                     </div>
-                    <div id="zillow-badge" class="integration-badge">Checking...</div>
+                    <div id="openai-badge" class="integration-badge">Checking...</div>
                 </div>
                 <div class="integration-keys">
                     <div class="key-row">
                         <span class="key-label">API KEY</span>
                         <div class="key-field-wrap">
-                            <input type="password" id="zillow_api_key" class="key-input" readonly placeholder="Not configured">
-                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('zillow_api_key', this)">&#128065; Reveal</button>
-                            <button class="key-btn key-btn-copy"   onclick="copyKey('zillow_api_key')">&#128203; Copy</button>
+                            <input type="password" id="openai_api_key" class="key-input" readonly placeholder="Not configured">
+                            <button class="key-btn key-btn-reveal" onclick="toggleReveal('openai_api_key', this)">&#128065; Reveal</button>
+                            <button class="key-btn key-btn-copy"   onclick="copyKey('openai_api_key')">&#128203; Copy</button>
                         </div>
                     </div>
-                    <div class="key-row">
-                        <span class="key-label">API HOST</span>
-                        <div class="key-field-wrap">
-                            <input type="text" id="zillow_api_host" class="key-input" readonly placeholder="zillow-com.p.rapidapi.com">
-                            <button class="key-btn key-btn-copy" onclick="copyKey('zillow_api_host')">&#128203; Copy</button>
-                        </div>
-                    </div>
-                    <div class="key-env-row"><code>ZILLOW_API_KEY</code><code>ZILLOW_API_HOST</code></div>
+                    <div class="key-env-row"><code>OPENAI_API_KEY</code></div>
                 </div>
             </div>
 
@@ -898,6 +891,7 @@ function openQuoteReview(q) {
     document.getElementById('qm_phone').textContent = q.phone || '-';
     document.getElementById('qm_address').textContent = q.address || '-';
     document.getElementById('qm_claimed_size').value = q.claimed_size ?? '';
+    document.getElementById('qm_lot_size').value = q.lot_size_acres ?? '';
     document.getElementById('qm_map_size').value = q.map_property_size ?? '';
     document.getElementById('qm_quote').value = q.quote ?? '';
     const approved = q.quote_approved;
@@ -912,15 +906,47 @@ function closeQuoteModal(event) {
 }
 
 async function saveQuoteEdits() {
+    const btn = document.getElementById('qm_save_btn');
+    btn.disabled = true; btn.textContent = '⏳ Recalculating…';
+
+    // Send whatever the admin has typed; null means "use AI result"
+    const manualSize  = document.getElementById('qm_map_size').value;
+    const manualQuote = document.getElementById('qm_quote').value;
     const body = {
-        map_property_size: parseFloat(document.getElementById('qm_map_size').value) || null,
-        quote: parseFloat(document.getElementById('qm_quote').value) || null,
+        map_property_size: manualSize  ? parseFloat(manualSize)  : null,
+        quote:             manualQuote ? parseFloat(manualQuote) : null,
     };
-    const res = await fetch(`/dashboard/admin/quotes/${_currentQuoteId}`, {
-        method: 'PATCH', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(body),
-    });
-    if (res.ok) { showToast('Quote updated'); loadAllQuotes(); }
-    else { const e = await res.json(); alert(e.detail || 'Failed to update'); }
+
+    try {
+        const res = await fetch(`/dashboard/admin/quotes/${_currentQuoteId}`, {
+            method: 'PATCH',
+            headers: {...headers, 'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            if (data.lot_size_acres != null)
+                document.getElementById('qm_lot_size').value = parseFloat(data.lot_size_acres).toFixed(4);
+            if (data.actual_size != null)
+                document.getElementById('qm_map_size').value = parseFloat(data.actual_size).toFixed(4);
+            const quoteField = document.getElementById('qm_quote');
+            if (data.quote_required) {
+                quoteField.value = '';
+                quoteField.placeholder = 'QT RQRD — enter manually';
+            } else if (data.quote != null) {
+                quoteField.value = parseFloat(data.quote).toFixed(2);
+                quoteField.placeholder = '';
+            }
+            showToast('Quote recalculated & saved');
+            loadAllQuotes();
+        } else {
+            alert(data.detail || 'Failed to update');
+        }
+    } catch (err) {
+        alert('Connection error');
+    } finally {
+        btn.disabled = false; btn.textContent = '💾 Save Edits';
+    }
 }
 
 async function approveAndSend() {
@@ -1746,10 +1772,9 @@ async function loadSettings() {
     document.getElementById('smtp_from').value = smtp.from_address || '';
     document.getElementById('mta_api_key').value = mta.api_key || '';
     document.getElementById('mta_account_id').value = mta.account_id || '';
-    const zillow = int.zillow;
-    setBadge('zillow-badge', zillow.configured);
-    document.getElementById('zillow_api_key').value = zillow.api_key || '';
-    document.getElementById('zillow_api_host').value = zillow.api_host || '';
+    const openai = int.openai;
+    setBadge('openai-badge', openai.configured);
+    document.getElementById('openai_api_key').value = openai.api_key || '';
     const everify = int.everify;
     setBadge('everify-badge', everify.configured);
     document.getElementById('everify_client_id').value = everify.client_id || '';
@@ -1880,7 +1905,11 @@ boot();
                     <input type="number" id="qm_claimed_size" class="settings-input" readonly step="0.0001" style="opacity:.6;">
                 </div>
                 <div class="qr-field">
-                    <label class="settings-label">Zillow Map Size (acres)</label>
+                    <label class="settings-label">AI Lot Size (acres)</label>
+                    <input type="number" id="qm_lot_size" class="settings-input" readonly step="0.0001" style="opacity:.6;">
+                </div>
+                <div class="qr-field">
+                    <label class="settings-label">AI Estimated Grass Area (acres)</label>
                     <input type="number" id="qm_map_size" class="settings-input" step="0.0001">
                 </div>
                 <div class="qr-field">
@@ -1895,7 +1924,7 @@ boot();
         </div>
         <div class="qr-footer">
             <button class="btn btn-outline" onclick="closeQuoteModal()">Cancel</button>
-            <button class="btn btn-outline" onclick="saveQuoteEdits()">&#128190; Save Edits</button>
+            <button class="btn btn-outline" id="qm_save_btn" onclick="saveQuoteEdits()">&#128260; Recalculate / Save</button>
             <button class="btn btn-primary" id="qm_approve_btn" onclick="approveAndSend()">&#10003; Approve &amp; Send Email</button>
         </div>
     </div>

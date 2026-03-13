@@ -28,7 +28,7 @@ from schemas import (
     ProposalSendRequest,
     TimelinePreference,
 )
-from services.maryland_api import fetch_actual_size
+from services.openai_size import fetch_grass_area
 
 logger = logging.getLogger(__name__)
 
@@ -104,18 +104,13 @@ async def create_landscaping_inquiry(
     """
     Submit a landscaping project inquiry.
 
-    No registration required. Validates property with Maryland API.
+    No registration required. Uses OpenAI to estimate lot size.
     Rate limited to 5 requests per minute.
     """
-    # Try to get lot size from Maryland API
-    lot_size, parcel_id = await fetch_actual_size(
-        inquiry.street_address,
-        inquiry.city,
-        inquiry.zipcode,
-    )
-
-    # Build full address
     full_address = f"{inquiry.street_address}, {inquiry.city}, MD {inquiry.zipcode}"
+
+    # Use OpenAI to estimate lot size
+    lot_size = await fetch_grass_area(full_address)
 
     # Create project record
     project = LandscapingProject(
@@ -123,7 +118,7 @@ async def create_landscaping_inquiry(
         email=inquiry.email,
         address=full_address,
         phone=inquiry.phone,
-        parcel_id=parcel_id,
+        parcel_id=None,
         lot_size_acres=lot_size,
         project_type=inquiry.project_type.value,
         project_scope=inquiry.project_scope.value,

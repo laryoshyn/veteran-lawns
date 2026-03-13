@@ -17,7 +17,8 @@ from database import get_db
 from models import Customer, User
 from schemas import CustomerResponse
 from services.email import send_payment_link_email
-from services.pricing import load_rates_raw, save_rates
+from services.openai_size import fetch_property_sizes
+from services.pricing import calculate_price, load_rates_raw, save_rates
 from services.settings import load_business_settings, save_business_settings
 
 logger = logging.getLogger(__name__)
@@ -924,10 +925,9 @@ async def admin_get_settings(
                 "api_key": s.mta_api_key,
                 "account_id": s.mta_account_id,
             },
-            "zillow": {
-                "configured": bool(s.zillow_api_key),
-                "api_key": s.zillow_api_key,
-                "api_host": s.zillow_api_host,
+            "openai": {
+                "configured": bool(s.openai_api_key),
+                "api_key": s.openai_api_key,
             },
             "everify": {
                 "configured": bool(s.everify_client_id and s.everify_client_secret and s.everify_company_id),
@@ -1005,20 +1005,33 @@ async def admin_edit_quote(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_staff)],
 ):
-    """Edit quote fields (actual_size, map_property_size, quote amount)."""
+    """Edit quote — always recalculates size from Zillow via AI."""
     result = await db.execute(select(Customer).where(Customer.id == quote_id))
     quote = result.scalar_one_or_none()
     if not quote:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
-    if data.actual_size is not None:
-        quote.actual_size = data.actual_size
-    if data.map_property_size is not None:
-        quote.map_property_size = data.map_property_size
-    if data.quote is not None:
-        quote.quote = data.quote
+
+    lot_size, grass_area = await fetch_property_sizes(quote.address)
+    quote_required = False
+    if grass_area is not None:
+        quote.lot_size_acres = lot_size
+        quote.map_property_size = grass_area
+        quote.actual_size = grass_area
+        monthly_quote, quote_required, tier_label = calculate_price(grass_area)
+        quote.quote = monthly_quote or 0.0
+        logger.info(f"Recalculated quote {quote_id}: lot={lot_size} grass={grass_area} acres → ${monthly_quote}")
+    else:
+        logger.warning(f"Size lookup failed for quote {quote_id}, keeping existing values")
+
     await db.commit()
-    logger.info(f"Staff {current_user.email} edited quote {quote_id}")
-    return {"message": "Quote updated"}
+    logger.info(f"Staff {current_user.email} saved quote {quote_id}")
+    return {
+        "message": "Quote updated",
+        "lot_size_acres": quote.lot_size_acres,
+        "actual_size": quote.actual_size,
+        "quote": quote.quote,
+        "quote_required": quote_required,
+    }
 
 
 @router.post("/admin/quotes/{quote_id}/approve-and-send")
@@ -1036,9 +1049,21 @@ async def admin_approve_and_send(
     if quote.purchased:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already purchased")
 
-    # Apply edits
+    # Recalculate size before approving
+    lot_size, grass_area = await fetch_property_sizes(quote.address)
+    if grass_area is not None:
+        quote.lot_size_acres = lot_size
+        quote.map_property_size = grass_area
+        quote.actual_size = grass_area
+        monthly_quote, _, _ = calculate_price(grass_area)
+        quote.quote = monthly_quote or 0.0
+        logger.info(f"Pre-approval recalc quote {quote_id}: lot={lot_size} grass={grass_area} acres")
+
+    # Allow manual overrides on top of AI result
     if data.actual_size is not None:
         quote.actual_size = data.actual_size
+        monthly_quote, _, _ = calculate_price(data.actual_size)
+        quote.quote = monthly_quote or 0.0
     if data.map_property_size is not None:
         quote.map_property_size = data.map_property_size
     if data.quote is not None:

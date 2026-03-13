@@ -133,6 +133,7 @@ class CustomerResponse(BaseModel):
     quote: float | None
     purchased: bool
     quote_approved: bool = False
+    lot_size_acres: float | None = None
     map_property_size: float | None = None
     created_at: datetime
     service_start_date: date | None = None

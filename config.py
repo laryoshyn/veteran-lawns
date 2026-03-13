@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     paychex_company_id: str = ""
     paychex_api_url: str = "https://api.paychex.com"
 
+    # OpenAI (optional — AI-based grass area estimation)
+    openai_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
