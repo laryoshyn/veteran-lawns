@@ -11,7 +11,11 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Home page with quote form."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    from config import get_settings
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "mapbox_api_key": get_settings().mapbox_api_key,
+    })
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -41,4 +45,8 @@ async def landscaping_page(request: Request):
 @router.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
     """Admin dashboard panel (role enforced client-side + API)."""
-    return templates.TemplateResponse("admin.html", {"request": request})
+    from config import get_settings
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "mapbox_api_key": get_settings().mapbox_api_key,
+    })

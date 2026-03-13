@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
@@ -18,6 +18,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 VALID_POSITIONS = {"lawn_service", "sales", "support", "manager"}
+
+EMP_ID_PREFIX = "VLL-"
+
+
+async def _next_employee_id(db: AsyncSession) -> str:
+    """Generate next sequential VLL-XXXXXX employee ID."""
+    result = await db.execute(
+        select(func.max(Employee.employee_id)).where(
+            Employee.employee_id.like(f"{EMP_ID_PREFIX}%")
+        )
+    )
+    last = result.scalar_one_or_none()
+    if last:
+        try:
+            num = int(last[len(EMP_ID_PREFIX):]) + 1
+        except ValueError:
+            num = 1
+    else:
+        num = 1
+    return f"{EMP_ID_PREFIX}{num:06d}"
 VALID_EMPLOYMENT_TYPES = {"full_time", "part_time", "contractor"}
 VALID_STATUSES = {"active", "inactive", "terminated"}
 VALID_WORK_AUTH = {"citizen", "national", "permanent_resident", "work_visa"}
@@ -100,7 +120,7 @@ async def create_employee(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid work authorization status")
 
     emp = Employee(
-        employee_id=body.employee_id or None,
+        employee_id=body.employee_id or await _next_employee_id(db),
         name=body.name,
         email=body.email,
         phone=body.phone,

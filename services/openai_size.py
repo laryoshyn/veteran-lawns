@@ -99,3 +99,49 @@ async def fetch_property_sizes(address: str) -> tuple[float | None, float | None
 async def fetch_grass_area(address: str) -> float | None:
     _, grass = await fetch_property_sizes(address)
     return grass
+
+
+def _route_sync(addresses: list[str]) -> list[int]:
+    """Ask GPT-4o to return the optimal driving order as a JSON array of 0-based indices."""
+    import json
+    from openai import OpenAI
+    client = OpenAI(api_key=get_settings().openai_api_key)
+
+    numbered = "\n".join(f"{i}: {addr}" for i, addr in enumerate(addresses))
+    res = client.responses.create(
+        model="gpt-4o",
+        tools=[{"type": "web_search_preview"}],
+        input=(
+            f"I have a list of service addresses in Harford County, MD that a lawn care crew must visit.\n"
+            f"Find the optimal driving route that minimises total travel distance, "
+            f"starting from the first address as the depot.\n\n"
+            f"Addresses:\n{numbered}\n\n"
+            f"Return ONLY a JSON array of the 0-based indices in the optimal visit order. "
+            f"Example for 4 stops: [0, 2, 3, 1]\n"
+            f"No explanation, no markdown, no extra text — just the JSON array."
+        ),
+    )
+    text = res.output_text.strip()
+    # Strip markdown code fences if model wrapped the response
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    order = json.loads(text.strip())
+    # Validate: must be a permutation of 0..n-1
+    if sorted(order) != list(range(len(addresses))):
+        raise ValueError(f"Invalid order returned: {order}")
+    return order
+
+
+async def route_crew_customers(addresses: list[str]) -> list[int]:
+    """Return 0-based indices in optimal driving order. Returns identity order on failure."""
+    if not _is_configured() or not addresses:
+        return list(range(len(addresses)))
+    try:
+        order = await asyncio.to_thread(_route_sync, addresses)
+        logger.info("Auto-route computed for %d addresses: %s", len(addresses), order)
+        return order
+    except Exception as e:
+        logger.warning("Auto-route failed: %s", e)
+        return list(range(len(addresses)))

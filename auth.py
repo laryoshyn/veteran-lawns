@@ -109,5 +109,17 @@ async def require_staff(
     return current_user
 
 
+async def require_manager(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Dependency that allows admin or manager roles."""
+    if current_user.role not in ("admin", "manager"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions",
+        )
+    return current_user
+
+
 # Convenience dependencies
 require_admin = require_role("admin")

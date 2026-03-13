@@ -2,11 +2,19 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from database import Base
+
+# Association table — crew ↔ employee (many-to-many)
+crew_members = Table(
+    "crew_members",
+    Base.metadata,
+    Column("crew_id", Integer, ForeignKey("crews.id", ondelete="CASCADE"), primary_key=True),
+    Column("employee_id", Integer, ForeignKey("employees.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class User(Base):
@@ -77,8 +85,12 @@ class Customer(Base):
     fieldroutes_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     fieldroutes_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    # Relationship to user
+    # Crew assignment
+    crew_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("crews.id"), nullable=True)
+
+    # Relationships
     user: Mapped[User | None] = relationship(back_populates="customers")
+    crew: Mapped["Crew | None"] = relationship("Crew", back_populates="customers")
 
 
 class LandscapingProject(Base):
@@ -191,6 +203,9 @@ class Employee(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # Crew memberships
+    crews: Mapped[list["Crew"]] = relationship("Crew", secondary=crew_members, back_populates="members")
+
 
 class JobApplication(Base):
     """Job application submitted via the careers form."""
@@ -210,8 +225,31 @@ class JobApplication(Base):
 
     # Optional
     availability_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    desired_hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Tracking
     status: Mapped[str] = mapped_column(String(20), default="new")  # new, reviewing, contacted, hired, rejected
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Crew(Base):
+    """Service crew — a named group of employees assigned to customer services."""
+
+    __tablename__ = "crews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    crew_id: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)  # CRW-000001
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active, inactive
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Many-to-many: crew members (employees)
+    members: Mapped[list["Employee"]] = relationship(
+        "Employee", secondary=crew_members, back_populates="crews"
+    )
+    # Ordered list of customer IDs (JSON array) — defines service stop order
+    customer_order: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # One-to-many: assigned customer services
+    customers: Mapped[list["Customer"]] = relationship("Customer", back_populates="crew")

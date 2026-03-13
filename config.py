@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     # OpenAI (optional — AI-based grass area estimation)
     openai_api_key: str = ""
 
+    # Mapbox (optional — route maps in weekly schedule)
+    mapbox_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

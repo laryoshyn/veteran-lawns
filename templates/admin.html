@@ -7,6 +7,14 @@
     <link rel="icon" type="image/webp" href="/static/favicon.webp">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/admin.css">
+    {% if mapbox_api_key %}
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    {% else %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {% endif %}
+    <script>const MAPBOX_TOKEN = {{ mapbox_api_key | tojson }};</script>
 </head>
 <body class="admin-body">
 
@@ -41,6 +49,9 @@
         </a>
         <a class="sidebar-link" data-section="calendar" onclick="switchSection('calendar')">
             <span class="sidebar-icon">&#128197;</span> Calendar
+        </a>
+        <a class="sidebar-link" data-section="crews" onclick="switchSection('crews')">
+            <span class="sidebar-icon">&#128101;</span> Crews
         </a>
         <a class="sidebar-link" data-section="employees" onclick="switchSection('employees')">
             <span class="sidebar-icon">&#128203;</span> Employees
@@ -247,6 +258,67 @@
                 <button class="btn-close" onclick="closeDayDetail()">&times;</button>
             </div>
             <div class="day-detail-content" id="dayDetailContent"></div>
+        </div>
+    </section>
+
+    <!-- Crews Section -->
+    <section class="admin-section" id="section-crews">
+        <div class="emp-tabs">
+            <button class="emp-tab active" id="tab-crew-list" onclick="switchCrewTab('list')">&#128101; Crews</button>
+            <button class="emp-tab" id="tab-crew-calendar" onclick="switchCrewTab('calendar')">&#128197; Service Calendar</button>
+        </div>
+
+        <!-- Crews list panel -->
+        <div id="crewPanel-list">
+            <div class="section-header-row">
+                <h2>Crew Management</h2>
+                <div class="toolbar-filters">
+                    <select id="crewStatusFilter" onchange="loadCrews()">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showCreateCrewModal()">+ Create Crew</button>
+                </div>
+            </div>
+            <div class="payments-summary">
+                <div class="summary-card"><span class="summary-value" id="statTotalCrews">0</span><span class="summary-label">Total Crews</span></div>
+                <div class="summary-card"><span class="summary-value" id="statActiveCrews">0</span><span class="summary-label">Active</span></div>
+            </div>
+            <div id="crewsContainer"><p class="loading">Loading...</p></div>
+        </div>
+
+        <!-- Crew calendar panel -->
+        <div id="crewPanel-calendar" style="display:none;">
+            <div class="section-header-row">
+                <h2>Service Calendar</h2>
+                <div class="toolbar-filters">
+                    <span style="font-size:13px;color:#888;">&#9679; <span style="color:#22c55e;">Assigned</span> &nbsp; &#9679; <span style="color:#f59e0b;">Unassigned</span></span>
+                </div>
+            </div>
+            <div class="calendar-container calendar-admin">
+                <div class="calendar-header">
+                    <button class="btn btn-outline btn-sm" onclick="crewCalShift(-1)">&larr; Prev</button>
+                    <h3 id="crewCalTitle">Loading...</h3>
+                    <button class="btn btn-outline btn-sm" onclick="crewCalShift(1)">Next &rarr;</button>
+                </div>
+                <div class="calendar-grid" id="crewCalGrid">
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+                </div>
+            </div>
+            <div class="day-detail-panel" id="crewDayPanel" style="display:none;">
+                <div class="day-detail-header">
+                    <h4 id="crewDayTitle">Services</h4>
+                    <button class="btn-close" onclick="document.getElementById('crewDayPanel').style.display='none'">&times;</button>
+                </div>
+                <div class="day-detail-content" id="crewDayContent"></div>
+            </div>
         </div>
     </section>
 
@@ -800,7 +872,7 @@ async function boot() {
 const sectionTitles = {
     overview: 'Overview', quotes: 'Quotes', customers: 'Customers',
     users: 'Users', payments: 'Payments', pricing: 'Pricing', calendar: 'Calendar',
-    employees: 'Employees', settings: 'Settings'
+    crews: 'Crews', employees: 'Employees', settings: 'Settings'
 };
 
 function switchSection(name) {
@@ -811,6 +883,7 @@ function switchSection(name) {
     document.getElementById('topbarTitle').textContent = sectionTitles[name] || name;
     if (name === 'quotes' && document.getElementById('allQuotesContainer').children[0]?.className === 'loading')
         loadAllQuotes();
+    if (name === 'crews') { loadCrews(); loadCrewSupportData(); }
     if (name === 'employees') { loadEmployees(); loadApplications(); }
     if (name === 'settings') loadSettings();
 }
@@ -1346,6 +1419,721 @@ function closeDayDetail() { document.getElementById('dayDetailPanel').style.disp
 document.getElementById('adminPrevMonth')?.addEventListener('click', () => { adminMonth--; if(adminMonth<1){adminMonth=12;adminYear--;} loadAdminCalendar(); });
 document.getElementById('adminNextMonth')?.addEventListener('click', () => { adminMonth++; if(adminMonth>12){adminMonth=1;adminYear++;} loadAdminCalendar(); });
 
+// ── Crews ──────────────────────────────────────────────
+let _crewsCache = [];
+let _crewAllEmps = [];
+let _crewAllCusts = [];
+let _currentCrewId = null;
+
+function switchCrewTab(tab) {
+    ['list','calendar'].forEach(t => {
+        document.getElementById(`crewPanel-${t}`).style.display = t === tab ? '' : 'none';
+        document.getElementById(`tab-crew-${t === 'list' ? 'list' : 'calendar'}`).classList.toggle('active', t === tab);
+    });
+    if (tab === 'calendar') renderCrewCalendar();
+}
+
+async function loadCrews() {
+    const status = document.getElementById('crewStatusFilter')?.value || '';
+    let url = '/crews/';
+    if (status) url += `?crew_status=${status}`;
+    const res = await fetch(url, {headers});
+    if (!res.ok) return;
+    _crewsCache = await res.json();
+    displayCrews(_crewsCache);
+    document.getElementById('statTotalCrews').textContent = _crewsCache.length;
+    document.getElementById('statActiveCrews').textContent = _crewsCache.filter(c => c.status === 'active').length;
+}
+
+async function loadCrewSupportData() {
+    const [empRes, custRes] = await Promise.all([
+        fetch('/crews/available-employees', {headers}),
+        fetch('/crews/available-customers', {headers}),
+    ]);
+    if (empRes.ok) _crewAllEmps = await empRes.json();
+    if (custRes.ok) {
+        _crewAllCusts = await custRes.json();
+    }
+}
+
+function nextServiceDate(startDateStr, frequency) {
+    if (!startDateStr || !frequency) return null;
+    const start = new Date(startDateStr + 'T00:00:00');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (start >= today) return start;
+    switch (frequency) {
+        case 'weekly': {
+            const diff = Math.ceil((today - start) / 86400000);
+            const n = new Date(start); n.setDate(n.getDate() + Math.ceil(diff / 7) * 7); return n;
+        }
+        case 'biweekly': {
+            const diff = Math.ceil((today - start) / 86400000);
+            const n = new Date(start); n.setDate(n.getDate() + Math.ceil(diff / 14) * 14); return n;
+        }
+        case 'monthly': {
+            const n = new Date(today.getFullYear(), today.getMonth(), start.getDate());
+            if (n < today) n.setMonth(n.getMonth() + 1);
+            return n;
+        }
+        default: return null;
+    }
+}
+
+function fmtDate(d) {
+    if (!d) return '—';
+    return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
+
+function countServicesThisMonth(customers) {
+    const now = new Date();
+    const year = now.getFullYear(), month = now.getMonth();
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    let count = 0;
+    customers.forEach(cu => {
+        if (!cu.service_start_date || !cu.service_frequency) return;
+        const start = new Date(cu.service_start_date + 'T00:00:00');
+        switch (cu.service_frequency) {
+            case 'weekly': {
+                const dow = start.getDay();
+                const d = new Date(year, month, 1);
+                while (d.getDay() !== dow) d.setDate(d.getDate() + 1);
+                while (d <= monthEnd) { if (d >= start) count++; d.setDate(d.getDate() + 7); }
+                break;
+            }
+            case 'biweekly': {
+                const d = new Date(start);
+                while (d < monthStart) d.setDate(d.getDate() + 14);
+                while (d <= monthEnd) { count++; d.setDate(d.getDate() + 14); }
+                break;
+            }
+            case 'monthly': {
+                const d = new Date(year, month, start.getDate());
+                if (d >= start && d <= monthEnd) count++;
+                break;
+            }
+        }
+    });
+    return count;
+}
+
+function displayCrews(crews) {
+    const el = document.getElementById('crewsContainer');
+    if (!crews.length) { el.innerHTML = '<p class="empty">No crews yet. Create one to get started.</p>'; return; }
+    el.innerHTML = crews.map(c => {
+        const memberRows = c.members.length
+            ? c.members.map(m => `
+                <div class="cc-row">
+                    <span class="crew-chip crew-chip--sm">${m.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</span>
+                    <span class="cc-row-name">${m.name}</span>
+                    <span class="cc-row-sub">${(m.position||'').replace(/_/g,' ')}</span>
+                </div>`).join('')
+            : '<div class="cc-empty">No members</div>';
+
+        const customerRows = c.customers.length
+            ? c.customers.map(cu => `
+                <div class="cc-row">
+                    <span class="crew-chip crew-chip--sm crew-chip--cust">${cu.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</span>
+                    <span class="cc-row-name">${cu.name}</span>
+                    <span class="cc-row-sub">${(cu.service_frequency||'').replace(/_/g,' ')}</span>
+                </div>`).join('')
+            : '<div class="cc-empty">No services</div>';
+
+        const sortedByDate = [...c.customers].sort((a, b) => {
+            const da = nextServiceDate(a.service_start_date, a.service_frequency) || new Date(9e9);
+            const db2 = nextServiceDate(b.service_start_date, b.service_frequency) || new Date(9e9);
+            return da - db2;
+        });
+        const dateRows = c.customers.length
+            ? sortedByDate.map(cu => {
+                const d = nextServiceDate(cu.service_start_date, cu.service_frequency);
+                return `<div class="cc-row">
+                    <span class="cc-date-badge">${fmtDate(d)}</span>
+                    <span class="cc-row-name">${cu.name}</span>
+                    <span class="cc-row-sub">${(cu.service_frequency||'').replace(/_/g,' ')}</span>
+                </div>`;
+              }).join('')
+            : '<div class="cc-empty">—</div>';
+
+        const monthlyCount = countServicesThisMonth(c.customers);
+        const monthLabel = new Date().toLocaleDateString('en-US', {month: 'long'});
+        return `
+        <div class="crew-card2 ${c.status === 'inactive' ? 'crew-card2--inactive' : ''}">
+            <div class="crew-card2-header">
+                <div class="crew-card2-title-block">
+                    <span class="crew-card2-name">${c.name}</span>
+                    <span class="crew-card2-id">${c.crew_id || ''}</span>
+                    <span class="crew-month-badge" title="${monthLabel} services">${monthlyCount} in ${monthLabel}</span>
+                </div>
+                <span class="status-badge ${c.status === 'active' ? 'status-active' : 'status-cancelled'}">${c.status}</span>
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showWeeklySchedule(${c.id})" title="View &amp; send this week's schedule">&#128197; Weekly Schedule</button>
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openCrewDetail(${c.id})">&#9998; Edit</button>
+            </div>
+            <div class="crew-card2-body">
+                <div class="crew-col2">
+                    <div class="crew-col2-title">&#128101; Members (${c.members.length})</div>
+                    <div class="crew-col2-items">${memberRows}</div>
+                </div>
+                <div class="crew-col2">
+                    <div class="crew-col2-title">&#127968; Customers (${c.customers.length})</div>
+                    <div class="crew-col2-items">${customerRows}</div>
+                </div>
+                <div class="crew-col2">
+                    <div class="crew-col2-title">&#128197; Next Service</div>
+                    <div class="crew-col2-items">${dateRows}</div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function showCreateCrewModal() {
+    document.getElementById('newCrewName').value = '';
+    document.getElementById('createCrewModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('newCrewName').focus(), 50);
+}
+
+async function createCrew() {
+    const name = document.getElementById('newCrewName').value.trim();
+    if (!name) { alert('Crew name is required.'); return; }
+    const res = await fetch('/crews/', {method:'POST', headers:{...headers,'Content-Type':'application/json'}, body:JSON.stringify({name})});
+    if (res.ok) {
+        const crew = await res.json();
+        document.getElementById('createCrewModal').style.display = 'none';
+        showToast(`Crew ${crew.crew_id} created`);
+        await loadCrews();
+        openCrewDetail(crew.id);
+    } else { const e = await res.json(); alert(e.detail || 'Failed to create crew'); }
+}
+
+function openCrewDetail(id) {
+    const crew = _crewsCache.find(c => c.id === id);
+    if (!crew) return;
+    _currentCrewId = id;
+    _cdmCustOrder = [...crew.customers]; // reset order from server on open
+    document.getElementById('cdm_title').textContent = crew.name;
+    document.getElementById('cdm_id').textContent = crew.crew_id || '';
+    document.getElementById('cdm_name').value = crew.name;
+    document.getElementById('cdm_status').value = crew.status;
+    _renderCrewMembers(crew);
+    _renderCrewCustomers(crew);
+    _populateEmpDropdown(crew);
+    _populateCustDropdown(crew);
+    document.getElementById('crewDetailModal').style.display = 'flex';
+}
+
+function _renderCrewMembers(crew) {
+    const el = document.getElementById('cdm_members');
+    document.getElementById('cdm_member_count').textContent = `(${crew.members.length})`;
+    if (!crew.members.length) { el.innerHTML = '<p style="color:#aaa;font-size:13px;margin:0;">No members yet.</p>'; return; }
+    el.innerHTML = crew.members.map(m => `
+        <div class="crew-member-row">
+            <div class="crew-chip">${m.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+            <div style="flex:1;">
+                <div style="font-size:14px;font-weight:600;">${m.name}</div>
+                <div style="font-size:12px;color:#888;">${m.position?.replace(/_/g,' ')} · ${m.employee_id || ''}</div>
+            </div>
+            <button class="btn-icon-danger" onclick="crewRemoveMember(${m.id})" title="Remove">&#10005;</button>
+        </div>`).join('');
+}
+
+let _cdmCustOrder = []; // local ordered customer list for the open modal
+
+function _renderCrewCustomers(crew) {
+    const el = document.getElementById('cdm_customers');
+    document.getElementById('cdm_cust_count').textContent = `(${crew.customers.length})`;
+    // Sync local order array with current crew customers (preserve existing order)
+    const existingIds = new Set(_cdmCustOrder.map(c => c.id));
+    crew.customers.forEach(c => { if (!existingIds.has(c.id)) _cdmCustOrder.push(c); });
+    _cdmCustOrder = _cdmCustOrder.filter(c => crew.customers.some(x => x.id === c.id));
+    // Update data from server (addresses may have changed)
+    _cdmCustOrder = _cdmCustOrder.map(c => crew.customers.find(x => x.id === c.id) || c);
+    _renderCustOrderList(el);
+}
+
+function _renderCustOrderList(el) {
+    if (!_cdmCustOrder.length) { el.innerHTML = '<p style="color:#aaa;font-size:13px;margin:0;">No services assigned.</p>'; return; }
+    el.innerHTML = _cdmCustOrder.map((c, i) => `
+        <div class="crew-member-row" style="align-items:center;">
+            <div style="display:flex;flex-direction:column;gap:2px;margin-right:6px;">
+                <button class="btn-icon-sm" onclick="crewCustMove(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button>
+                <button class="btn-icon-sm" onclick="crewCustMove(${i}, 1)" ${i === _cdmCustOrder.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button>
+            </div>
+            <span style="font-size:11px;color:#aaa;min-width:18px;text-align:right;margin-right:8px;">${i + 1}</span>
+            <div style="flex:1;">
+                <div style="font-size:14px;font-weight:600;">${c.name}</div>
+                <div style="font-size:12px;color:#888;">${c.address} · ${(c.service_frequency||'').replace(/_/g,' ')} · starts ${c.service_start_date||'TBD'}</div>
+            </div>
+            <button class="btn-icon-danger" onclick="crewRemoveCustomer(${c.id})" title="Unassign">&#10005;</button>
+        </div>`).join('');
+}
+
+async function crewCustMove(idx, dir) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= _cdmCustOrder.length) return;
+    [_cdmCustOrder[idx], _cdmCustOrder[newIdx]] = [_cdmCustOrder[newIdx], _cdmCustOrder[idx]];
+    _renderCustOrderList(document.getElementById('cdm_customers'));
+    // Persist new order immediately
+    await fetch(`/crews/${_currentCrewId}/reorder-customers`, {
+        method: 'POST',
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: JSON.stringify({order: _cdmCustOrder.map(c => c.id)}),
+    });
+}
+
+function _populateEmpDropdown(crew) {
+    const memberIds = new Set(crew.members.map(m => m.id));
+    const sel = document.getElementById('cdm_add_emp');
+    sel.innerHTML = '<option value="">— Add employee —</option>' +
+        _crewAllEmps.filter(e => !memberIds.has(e.id)).map(e =>
+            `<option value="${e.id}">${e.name} (${(e.position||'').replace(/_/g,' ')})</option>`
+        ).join('');
+}
+
+function _populateCustDropdown(crew) {
+    const assignedIds = new Set(crew.customers.map(c => c.id));
+    const sel = document.getElementById('cdm_add_cust');
+    sel.innerHTML = '<option value="">— Assign customer —</option>' +
+        _crewAllCusts.filter(c => !assignedIds.has(c.id)).map(c =>
+            `<option value="${c.id}">${c.name} – ${(c.service_frequency||'').replace(/_/g,' ')}</option>`
+        ).join('');
+}
+
+async function _refreshCurrentCrew() {
+    const res = await fetch('/crews/', {headers});
+    if (res.ok) { _crewsCache = await res.json(); }
+    const crew = _crewsCache.find(c => c.id === _currentCrewId);
+    if (crew) {
+        _renderCrewMembers(crew);
+        _renderCrewCustomers(crew);
+        _populateEmpDropdown(crew);
+        _populateCustDropdown(crew);
+        document.getElementById('cdm_title').textContent = crew.name;
+        document.getElementById('statTotalCrews').textContent = _crewsCache.length;
+        document.getElementById('statActiveCrews').textContent = _crewsCache.filter(c => c.status === 'active').length;
+        displayCrews(_crewsCache);
+    }
+}
+
+async function crewAddMember() {
+    const empId = document.getElementById('cdm_add_emp').value;
+    if (!empId) return;
+    const res = await fetch(`/crews/${_currentCrewId}/members/${empId}`, {method:'POST', headers});
+    if (res.ok) { showToast('Member added'); await _refreshCurrentCrew(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function crewRemoveMember(empId) {
+    const res = await fetch(`/crews/${_currentCrewId}/members/${empId}`, {method:'DELETE', headers});
+    if (res.ok) { showToast('Member removed'); await _refreshCurrentCrew(); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function crewAssignCustomer() {
+    const custId = document.getElementById('cdm_add_cust').value;
+    if (!custId) return;
+    const res = await fetch(`/crews/${_currentCrewId}/customers/${custId}`, {method:'POST', headers});
+    if (res.ok) { showToast('Customer assigned'); await _refreshCurrentCrew(); await loadCrewSupportData(); _populateCustDropdown(_crewsCache.find(c=>c.id===_currentCrewId)); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function crewRemoveCustomer(custId) {
+    const res = await fetch(`/crews/${_currentCrewId}/customers/${custId}`, {method:'DELETE', headers});
+    if (res.ok) { showToast('Customer unassigned'); await _refreshCurrentCrew(); await loadCrewSupportData(); _populateCustDropdown(_crewsCache.find(c=>c.id===_currentCrewId)); }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function crewSaveInfo() {
+    const name = document.getElementById('cdm_name').value.trim();
+    const status = document.getElementById('cdm_status').value;
+    if (!name) { alert('Name is required'); return; }
+    const res = await fetch(`/crews/${_currentCrewId}`, {method:'PATCH', headers:{...headers,'Content-Type':'application/json'}, body:JSON.stringify({name, status})});
+    if (res.ok) { showToast('Saved'); await _refreshCurrentCrew(); document.getElementById('crewDetailModal').style.display = 'none'; }
+    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+}
+
+async function crewDelete() {
+    if (!confirm('Permanently delete this crew? Members will be unassigned and customers freed. This cannot be undone.')) return;
+    const res = await fetch(`/crews/${_currentCrewId}`, {method:'DELETE', headers});
+    if (res.ok) {
+        showToast('Crew deleted');
+        document.getElementById('crewDetailModal').style.display = 'none';
+        await loadCrews();
+        await loadCrewSupportData();
+    } else { const e = await res.json(); alert(e.detail || 'Failed to delete crew'); }
+}
+
+async function crewDeactivate() {
+    if (!confirm('Deactivate this crew?')) return;
+    const res = await fetch(`/crews/${_currentCrewId}`, {method:'PATCH', headers:{...headers,'Content-Type':'application/json'}, body:JSON.stringify({status:'inactive'})});
+    if (res.ok) { showToast('Crew deactivated'); document.getElementById('crewDetailModal').style.display = 'none'; await _refreshCurrentCrew(); }
+}
+
+
+async function showWeeklySchedule(crewId) {
+    let crew = _crewsCache.find(c => c.id === crewId);
+    if (!crew) return;
+
+    // Show modal immediately with loading state while AI routes
+    document.getElementById('wsCrewName').textContent = crew.name;
+    document.getElementById('wsWeekLabel').textContent = 'Optimising route…';
+    document.getElementById('wsBody').innerHTML = '<p style="text-align:center;padding:40px;color:#888;">&#9203; AI is calculating the optimal driving route…</p>';
+    document.getElementById('wsSendBtn').onclick = null;
+    document.getElementById('weeklyScheduleModal').style.display = 'flex';
+
+    // Run auto-route before rendering
+    if (crew.customers.length > 1) {
+        try {
+            const res = await fetch(`/crews/${crewId}/auto-route`, {method: 'POST', headers});
+            if (res.ok) {
+                const updated = await res.json();
+                _crewsCache = _crewsCache.map(c => c.id === crewId ? updated : c);
+                crew = updated;
+            }
+        } catch (e) { /* fall through with original order */ }
+    }
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const monday = new Date(today); monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+    const weekDays = Array.from({length: 7}, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
+    const weekLabel = `${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${weekDays[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+    let hasAny = false;
+    const dayMaps = [];
+    const dayBlocks = weekDays.map((date, di) => {
+        const stops = crew.customers.filter(c => {
+            if (!c.service_start_date || !c.service_frequency) return false;
+            const start = new Date(c.service_start_date + 'T00:00:00');
+            if (date < start) return false;
+            const diff = Math.round((date - start) / 86400000);
+            if (c.service_frequency === 'weekly') return diff % 7 === 0;
+            if (c.service_frequency === 'biweekly') return diff % 14 === 0;
+            if (c.service_frequency === 'monthly') return date.getDate() === start.getDate();
+            return false;
+        });
+        if (!stops.length) return '';
+        hasAny = true;
+        const mapId = `ws-map-${crewId}-${di}`;
+        dayMaps.push({mapId, stops});
+        const dateLabel = date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+        const rows = stops.map((c, i) => {
+            const sqft = c.actual_size ? `${c.actual_size.toLocaleString()} sq ft` :
+                         c.claimed_size ? `${c.claimed_size.toLocaleString()} sq ft*` :
+                         c.lot_size_acres ? `${c.lot_size_acres} ac` : '—';
+            return `<tr id="${mapId}-row-${i}">
+                <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#1b3a2f;">${i+1}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">${c.name}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#555;">${c.address}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap;">${c.phone || '—'}</td>
+                <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap;color:#166534;">${sqft}</td>
+            </tr>`;
+        }).join('');
+        return `<div class="ws-day-block">
+            <div class="ws-day-header">${dateLabel} <span style="font-weight:400;font-size:13px;opacity:.7;">(${stops.length} stop${stops.length>1?'s':''})</span></div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead><tr style="background:#f3f4f6;">
+                    <th style="padding:6px 12px;text-align:left;font-size:11px;color:#888;">#</th>
+                    <th style="padding:6px 12px;text-align:left;font-size:11px;color:#888;">Customer</th>
+                    <th style="padding:6px 12px;text-align:left;font-size:11px;color:#888;">Address</th>
+                    <th style="padding:6px 12px;text-align:left;font-size:11px;color:#888;">Phone</th>
+                    <th style="padding:6px 12px;text-align:left;font-size:11px;color:#888;">Lot Size</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div id="${mapId}" class="ws-map-container"></div>
+        </div>`;
+    }).join('');
+
+    const body = hasAny ? dayBlocks : '<p style="color:#aaa;text-align:center;padding:32px 0;">No services scheduled this week.</p>';
+
+    document.getElementById('wsCrewName').textContent = crew.name;
+    document.getElementById('wsWeekLabel').textContent = weekLabel;
+    document.getElementById('wsBody').innerHTML = body;
+    document.getElementById('wsSendBtn').onclick = () => wsSendToCrew(crewId, document.getElementById('wsSendBtn'));
+    document.getElementById('weeklyScheduleModal').style.display = 'flex';
+
+    // Init maps after DOM is visible
+    setTimeout(() => _initDayMaps(dayMaps), 80);
+}
+
+// ── Map helpers ──────────────────────────────────────────────────────────────
+let _wsMaps = [];
+
+async function _geocodeBatch(addresses) {
+    const res = await fetch('/crews/geocode', {
+        method: 'POST',
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: JSON.stringify({addresses}),
+    });
+    if (!res.ok) return addresses.map(() => null);
+    return await res.json(); // [{lat, lon} | null, ...]
+}
+
+async function _initDayMaps(dayMaps) {
+    _wsMaps.forEach(m => { try { m.remove ? m.remove() : m.setMap && m.setMap(null); } catch(e) {} });
+    _wsMaps = [];
+    for (const {mapId, stops} of dayMaps) {
+        const el = document.getElementById(mapId);
+        if (!el) continue;
+        if (MAPBOX_TOKEN) {
+            await _initMapboxMap(el, mapId, stops);
+        } else {
+            await _initLeafletMap(el, mapId, stops);
+        }
+    }
+}
+
+function _markRow(mapId, i, found) {
+    const row = document.getElementById(`${mapId}-row-${i}`);
+    if (!row) return;
+    if (!found) {
+        row.style.background = '#fff7ed';
+        const cell = row.cells[2];
+        if (cell) cell.innerHTML += ' <span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:#c2410c;background:#ffedd5;padding:1px 6px;border-radius:4px;">⚠ address not found on map</span>';
+    }
+}
+
+async function _initMapboxMap(el, mapId, stops) {
+    el.innerHTML = '';
+    const coords = await _geocodeBatch(stops.map(s => s.address));
+    coords.forEach((c, i) => { if (!c) _markRow(mapId, i, false); });
+    const valid = coords.map((c, i) => c ? {c, stop: stops[i], idx: i} : null).filter(Boolean);
+    if (!valid.length) {
+        el.innerHTML = '<p style="text-align:center;padding:16px;color:#aaa;font-size:13px;">⚠ No addresses could be located on map</p>';
+        return;
+    }
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    const map = new mapboxgl.Map({
+        container: el,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [valid[0].c.lon, valid[0].c.lat],
+        zoom: 11,
+    });
+    _wsMaps.push(map);
+
+    map.on('load', async () => {
+        // Add numbered markers
+        valid.forEach(({c, stop, idx}) => {
+            _markRow(mapId, idx, true);
+            const div = document.createElement('div');
+            div.style.cssText = 'width:28px;height:28px;border-radius:50%;background:#1b3a2f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:default;';
+            div.textContent = idx + 1;
+            new mapboxgl.Marker({element: div})
+                .setLngLat([c.lon, c.lat])
+                .setPopup(new mapboxgl.Popup({offset: 18}).setHTML(`<strong>${stop.name}</strong><br>${stop.address}${stop.phone ? '<br>' + stop.phone : ''}`))
+                .addTo(map);
+        });
+
+        // Draw route via Mapbox Directions API
+        if (valid.length >= 2) {
+            try {
+                const coordStr = valid.map(({c}) => `${c.lon},${c.lat}`).join(';');
+                const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`);
+                const d = await r.json();
+                if (d.routes?.[0]) {
+                    map.addSource(`route-${mapId}`, {type: 'geojson', data: {type: 'Feature', geometry: d.routes[0].geometry}});
+                    map.addLayer({id: `route-${mapId}`, type: 'line', source: `route-${mapId}`,
+                        layout: {'line-join': 'round', 'line-cap': 'round'},
+                        paint: {'line-color': '#166534', 'line-width': 4, 'line-opacity': 0.85}});
+                }
+            } catch(e) { console.warn('Mapbox directions failed', e); }
+        }
+
+        // Fit bounds to all stops
+        const bounds = valid.reduce((b, {c}) => b.extend([c.lon, c.lat]),
+            new mapboxgl.LngLatBounds([valid[0].c.lon, valid[0].c.lat], [valid[0].c.lon, valid[0].c.lat]));
+        map.fitBounds(bounds, {padding: 40, maxZoom: valid.length === 1 ? 15 : 14});
+    });
+}
+
+async function _initLeafletMap(el, mapId, stops) {
+    const coords = await _geocodeBatch(stops.map(s => s.address));
+    coords.forEach((c, i) => { if (!c) _markRow(mapId, i, false); });
+    const valid = coords.map((c, i) => c ? {coord: [c.lat, c.lon], stop: stops[i]} : null).filter(Boolean);
+    if (!valid.length) { el.innerHTML = '<p style="text-align:center;padding:16px;color:#aaa;font-size:13px;">⚠ No addresses could be located on map</p>'; return; }
+    el.innerHTML = '';
+    const map = L.map(el, {scrollWheelZoom: false});
+    _wsMaps.push(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 18,
+    }).addTo(map);
+    valid.forEach(({coord, stop}, idx) => {
+        const icon = L.divIcon({className: '',
+            html: `<div style="background:#1b3a2f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);">${idx+1}</div>`,
+            iconSize: [28, 28], iconAnchor: [14, 14]});
+        L.marker(coord, {icon}).addTo(map).bindPopup(`<strong>${stop.name}</strong><br>${stop.address}${stop.phone ? '<br>' + stop.phone : ''}`);
+    });
+    if (valid.length > 1) {
+        try {
+            const wp = valid.map(p => `${p.coord[1]},${p.coord[0]}`).join(';');
+            const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${wp}?overview=full&geometries=geojson`);
+            const d = await r.json();
+            if (d.routes?.[0]) L.geoJSON(d.routes[0].geometry, {style: {color: '#166534', weight: 4, opacity: 0.8}}).addTo(map);
+        } catch(e) {}
+    }
+    const bounds = L.latLngBounds(valid.map(p => p.coord));
+    map.fitBounds(bounds, {padding: [36, 36]});
+    if (valid.length === 1) map.setZoom(15);
+}
+
+async function wsSendToCrew(crewId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+        const res = await fetch(`/crews/${crewId}/send-schedule`, {method: 'POST', headers});
+        const data = await res.json();
+        if (res.ok) { showToast(data.message || 'Schedule sent!'); }
+        else { alert(data.detail || 'Failed to send schedule'); }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '&#128231; Send to Crew';
+    }
+}
+
+// ── Crew Calendar ───────────────────────────────────────
+let _crewCalYear = new Date().getFullYear();
+let _crewCalMonth = new Date().getMonth(); // 0-based
+let _crewCalServices = [];
+
+async function loadCrewCalendarData() {
+    const res = await fetch('/crews/calendar', {headers});
+    if (res.ok) _crewCalServices = await res.json();
+}
+
+function crewCalShift(dir) {
+    _crewCalMonth += dir;
+    if (_crewCalMonth > 11) { _crewCalMonth = 0; _crewCalYear++; }
+    if (_crewCalMonth < 0) { _crewCalMonth = 11; _crewCalYear--; }
+    renderCrewCalendar();
+}
+
+function _serviceOccursOn(svc, date) {
+    if (!svc.service_start_date) return false;
+    const start = new Date(svc.service_start_date + 'T00:00:00');
+    if (date < start) return false;
+    const diffDays = Math.round((date - start) / 86400000);
+    switch (svc.service_frequency) {
+        case 'weekly': return diffDays % 7 === 0;
+        case 'biweekly': return diffDays % 14 === 0;
+        case 'monthly': return date.getDate() === start.getDate();
+        default: return false;
+    }
+}
+
+async function renderCrewCalendar() {
+    if (!_crewCalServices.length) await loadCrewCalendarData();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('crewCalTitle').textContent = `${months[_crewCalMonth]} ${_crewCalYear}`;
+
+    const grid = document.getElementById('crewCalGrid');
+    // Remove day cells (keep headers = first 7)
+    while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+    const firstDay = new Date(_crewCalYear, _crewCalMonth, 1).getDay();
+    const daysInMonth = new Date(_crewCalYear, _crewCalMonth + 1, 0).getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Blank leading cells
+    for (let i = 0; i < firstDay; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'calendar-day calendar-day--other';
+        grid.appendChild(blank);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(_crewCalYear, _crewCalMonth, d);
+        const services = _crewCalServices.filter(s => _serviceOccursOn(s, date));
+        const assigned = services.filter(s => s.crew_id);
+        const unassigned = services.filter(s => !s.crew_id);
+
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day' + (date.getTime() === today.getTime() ? ' calendar-day--today' : '');
+
+        let dots = '';
+        if (assigned.length) dots += `<span class="cal-dot" style="background:#166534;" title="${assigned.length} assigned">${assigned.length}</span>`;
+        if (unassigned.length) dots += `<span class="cal-dot" style="background:#f59e0b;" title="${unassigned.length} unassigned">${unassigned.length}</span>`;
+
+        cell.innerHTML = `<span class="calendar-day-num">${d}</span><div class="cal-dot-row">${dots}</div>`;
+        if (services.length) {
+            const dateStr = date.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+            cell.onclick = () => showCrewDayDetail(dateStr, services);
+            cell.style.cursor = 'pointer';
+        }
+        grid.appendChild(cell);
+    }
+}
+
+function showCrewDayDetail(dateStr, services) {
+    document.getElementById('crewDayTitle').textContent = dateStr;
+    const activeCrews = _crewsCache.filter(c => c.status === 'active');
+    // Count how many services on this day each crew already has
+    const crewServiceCount = {};
+    services.forEach(s => { if (s.crew_id) crewServiceCount[s.crew_id] = (crewServiceCount[s.crew_id] || 0) + 1; });
+    const crewOptions = `<option value="">— Unassigned —</option>` +
+        activeCrews.map(c => {
+            const n = crewServiceCount[c.id] || 0;
+            const label = n > 0 ? `${c.name} (${n} service${n > 1 ? 's' : ''})` : c.name;
+            return `<option value="${c.id}">${label}</option>`;
+        }).join('');
+
+    const unassigned = services.filter(s => !s.crew_id);
+    const assigned = services.filter(s => s.crew_id);
+    const sorted = [...unassigned, ...assigned];
+
+    document.getElementById('crewDayContent').innerHTML = sorted.map(s => {
+        const isUnassigned = !s.crew_id;
+        return `
+        <div class="day-detail-row" id="ddr-${s.id}" style="border-left:3px solid ${isUnassigned ? '#f59e0b' : '#166534'};padding-left:10px;margin-bottom:8px;border-radius:6px;${isUnassigned ? 'background:#fff7ed;' : ''}">
+            <div style="font-weight:600;font-size:14px;padding-top:8px;">${s.name}</div>
+            <div style="font-size:12px;color:#666;margin-bottom:6px;">${s.address} · ${(s.service_frequency||'').replace(/_/g,' ')}</div>
+            <div style="display:flex;gap:8px;align-items:center;padding-bottom:8px;">
+                <select class="settings-input" style="flex:1;font-size:12px;padding:4px 8px;height:30px;"
+                    onchange="assignCrewFromCalendar(${s.id}, this.value, this)">
+                    ${crewOptions}
+                </select>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Set current crew selection for each service
+    services.forEach(s => {
+        const sel = document.querySelector(`#ddr-${s.id} select`);
+        if (sel) sel.value = s.crew_id || '';
+    });
+
+    document.getElementById('crewDayPanel').style.display = '';
+}
+
+async function assignCrewFromCalendar(customerId, crewId, selectEl) {
+    selectEl.disabled = true;
+    const row = selectEl.closest('.day-detail-row');
+    try {
+        let res;
+        if (crewId) {
+            res = await fetch(`/crews/${crewId}/customers/${customerId}`, {method: 'POST', headers});
+        } else {
+            // Find current crew to unassign from
+            const currentCrew = _crewsCache.find(c => c.customers.some(cu => cu.id === customerId));
+            if (!currentCrew) { selectEl.disabled = false; return; }
+            res = await fetch(`/crews/${currentCrew.id}/customers/${customerId}`, {method: 'DELETE', headers});
+        }
+        if (res.ok) {
+            row.style.borderLeftColor = crewId ? '#22c55e' : '#f59e0b';
+            showToast(crewId ? 'Crew assigned' : 'Crew unassigned');
+            await loadCrews();
+            await loadCrewCalendarData();
+            renderCrewCalendar();
+        } else {
+            const e = await res.json();
+            alert(e.detail || 'Failed');
+            selectEl.value = selectEl.dataset.prev || '';
+        }
+    } finally {
+        selectEl.disabled = false;
+    }
+}
+
 // ── Employees ─────────────────────────────────────────
 const empPositionLabels = {lawn_service: 'Lawn Service', sales: 'Sales', support: 'Support', manager: 'Manager'};
 const empTypeLabels = {full_time: 'Full Time', part_time: 'Part Time', contractor: 'Contractor'};
@@ -1403,60 +2191,59 @@ function displayEmployees(emps) {
 
 function showAddEmployeeModal() {
     const modal = document.createElement('div');
-    modal.className = 'modal'; modal.id = 'addEmployeeModal';
+    modal.className = 'qr-overlay'; modal.id = 'addEmployeeModal';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
     modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header"><h3>Add Employee</h3><button class="modal-close" onclick="document.getElementById('addEmployeeModal').remove()">&times;</button></div>
-            <div class="modal-body">
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Employee ID</label><input type="text" id="newEmpId" placeholder="EMP-001"></div>
-                    <div class="form-group"><label>Full Name *</label><input type="text" id="newEmpName" placeholder="Jane Smith"></div>
-                </div>
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Email *</label><input type="email" id="newEmpEmail" placeholder="jane@example.com"></div>
-                    <div class="form-group"><label>Phone *</label><input type="tel" id="newEmpPhone" placeholder="(410) 555-1234"></div>
-                </div>
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Position *</label>
-                        <select id="newEmpPosition">
+        <div class="qr-box" style="max-width:700px;">
+            <div class="qr-header">
+                <h3 class="qr-title">&#43; Add Employee</h3>
+                <button class="qr-close" onclick="document.getElementById('addEmployeeModal').remove()">&times;</button>
+            </div>
+            <div class="qr-body">
+                <p class="qr-section-title">Basic Info</p>
+                <div class="qr-field-grid">
+                    <div class="qr-field"><label class="settings-label">Employee ID</label><input type="text" id="newEmpId" class="settings-input" placeholder="Auto-generated (VLL-XXXXXX)"></div>
+                    <div class="qr-field"><label class="settings-label">Full Name *</label><input type="text" id="newEmpName" class="settings-input" placeholder="Jane Smith"></div>
+                    <div class="qr-field"><label class="settings-label">Email *</label><input type="email" id="newEmpEmail" class="settings-input" placeholder="jane@example.com"></div>
+                    <div class="qr-field"><label class="settings-label">Phone *</label><input type="tel" id="newEmpPhone" class="settings-input" placeholder="(410) 555-1234"></div>
+                    <div class="qr-field"><label class="settings-label">Position *</label>
+                        <select id="newEmpPosition" class="settings-input">
                             <option value="lawn_service">Lawn Service</option>
                             <option value="sales">Sales</option>
                             <option value="support">Support</option>
                             <option value="manager">Manager</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Employment Type</label>
-                        <select id="newEmpType">
+                    <div class="qr-field"><label class="settings-label">Employment Type</label>
+                        <select id="newEmpType" class="settings-input">
                             <option value="full_time">Full Time</option>
                             <option value="part_time">Part Time</option>
                             <option value="contractor">Contractor</option>
                         </select>
                     </div>
+                    <div class="qr-field"><label class="settings-label">Hire Date</label><input type="date" id="newEmpHireDate" class="settings-input"></div>
+                    <div class="qr-field"><label class="settings-label">Hourly Rate ($)</label><input type="number" id="newEmpRate" class="settings-input" step="0.01" placeholder="18.00"></div>
+                    <div class="qr-field" style="grid-column:1/-1"><label class="settings-label">Notes</label><input type="text" id="newEmpNotes" class="settings-input" placeholder="Optional notes"></div>
                 </div>
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Hire Date</label><input type="date" id="newEmpHireDate"></div>
-                    <div class="form-group"><label>Hourly Rate ($)</label><input type="number" id="newEmpRate" step="0.01" placeholder="18.00"></div>
-                </div>
-                <div class="modal-section-title">Work Authorization (I-9)</div>
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Authorized to Work in U.S.?</label>
-                        <select id="newEmpAuthorized">
+                <div class="qr-divider"></div>
+                <p class="qr-section-title">Work Authorization (I-9)</p>
+                <div class="qr-field-grid">
+                    <div class="qr-field"><label class="settings-label">Authorized to Work in U.S.?</label>
+                        <select id="newEmpAuthorized" class="settings-input">
                             <option value="">Not recorded</option>
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Requires Sponsorship?</label>
-                        <select id="newEmpSponsorship">
+                    <div class="qr-field"><label class="settings-label">Requires Sponsorship?</label>
+                        <select id="newEmpSponsorship" class="settings-input">
                             <option value="">Not recorded</option>
                             <option value="false">No</option>
                             <option value="true">Yes</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-row-modal">
-                    <div class="form-group"><label>Work Auth Status</label>
-                        <select id="newEmpWorkAuth">
+                    <div class="qr-field"><label class="settings-label">Work Auth Status</label>
+                        <select id="newEmpWorkAuth" class="settings-input">
                             <option value="">Not recorded</option>
                             <option value="citizen">U.S. Citizen</option>
                             <option value="national">U.S. Noncitizen National</option>
@@ -1464,11 +2251,10 @@ function showAddEmployeeModal() {
                             <option value="work_visa">Alien Authorized to Work</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>SSN (optional)</label><input type="password" id="newEmpSsn" placeholder="XXX-XX-XXXX" autocomplete="off"></div>
+                    <div class="qr-field"><label class="settings-label">SSN (optional)</label><input type="password" id="newEmpSsn" class="settings-input" placeholder="XXX-XX-XXXX" autocomplete="off"></div>
                 </div>
-                <div class="form-group"><label>Notes</label><input type="text" id="newEmpNotes" placeholder="Optional notes"></div>
             </div>
-            <div class="modal-footer">
+            <div class="qr-footer">
                 <button class="btn btn-outline" onclick="document.getElementById('addEmployeeModal').remove()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveNewEmployee()">Add Employee</button>
             </div>
@@ -1651,10 +2437,12 @@ function openAppReview(a) {
     document.getElementById('ar_sponsorship').textContent = a.requires_sponsorship ? 'Yes' : 'No';
     document.getElementById('ar_work_auth').textContent = (a.work_auth_status || '').replace(/_/g, ' ');
     document.getElementById('ar_available').textContent = a.availability_date || '—';
+    document.getElementById('ar_desired_rate').textContent = a.desired_hourly_rate != null ? '$' + parseFloat(a.desired_hourly_rate).toFixed(2) + '/hr' : '—';
     document.getElementById('ar_submitted').textContent = new Date(a.created_at).toLocaleDateString();
     document.getElementById('ar_message').textContent = a.message || '';
-    document.getElementById('ar_message_block').style.display = a.message ? '' : 'none';
+    document.getElementById('ar_message_row').style.display = a.message ? '' : 'none';
     document.getElementById('ar_status').value = a.status;
+    document.getElementById('ar_offered_rate').value = a.desired_hourly_rate != null ? a.desired_hourly_rate : '';
     const hired = a.status === 'hired';
     document.getElementById('ar_hire_btn').disabled = hired;
     document.getElementById('ar_hire_btn').textContent = hired ? '✓ Already Hired' : '✓ Hire & Send Email';
@@ -1676,7 +2464,9 @@ async function submitAppStatus() {
 async function hireApplicant() {
     const btn = document.getElementById('ar_hire_btn');
     btn.disabled = true; btn.textContent = 'Processing…';
-    const res = await fetch(`/careers/applications/${_currentAppId}/hire`, {method: 'POST', headers});
+    const rateVal = document.getElementById('ar_offered_rate').value;
+    const rateParam = rateVal ? `?offered_hourly_rate=${parseFloat(rateVal)}` : '';
+    const res = await fetch(`/careers/applications/${_currentAppId}/hire${rateParam}`, {method: 'POST', headers});
     if (res.ok) {
         const data = await res.json();
         showToast(data.email_sent ? '🎉 Hired & congratulation email sent!' : 'Hired (email not configured)');
@@ -1947,23 +2737,29 @@ boot();
                 <div class="qr-info-item"><span class="qr-label">Needs Sponsorship</span><span id="ar_sponsorship" class="qr-value">—</span></div>
                 <div class="qr-info-item"><span class="qr-label">Auth Status</span><span id="ar_work_auth" class="qr-value">—</span></div>
                 <div class="qr-info-item"><span class="qr-label">Available From</span><span id="ar_available" class="qr-value">—</span></div>
+                <div class="qr-info-item"><span class="qr-label">Applicant Desired Rate</span><span id="ar_desired_rate" class="qr-value">—</span></div>
                 <div class="qr-info-item"><span class="qr-label">Submitted</span><span id="ar_submitted" class="qr-value">—</span></div>
             </div>
-            <div id="ar_message_block" class="qr-divider" style="margin-top:16px;"></div>
-            <div id="ar_message_block" style="display:none;margin-bottom:16px;">
+            <div id="ar_message_row" style="display:none;margin-bottom:16px;">
                 <p class="qr-section-title" style="margin-bottom:6px;">Applicant Message</p>
                 <p id="ar_message" style="margin:0;color:#444;font-size:14px;line-height:1.6;background:#f9fbf7;padding:12px 14px;border-radius:8px;border:1px solid #e4e8e0;"></p>
             </div>
             <div class="qr-divider"></div>
-            <p class="qr-section-title">Status</p>
-            <div class="qr-field" style="max-width:220px;">
-                <select id="ar_status" class="settings-input">
-                    <option value="new">New</option>
-                    <option value="reviewing">Reviewing</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="hired">Hired</option>
-                    <option value="rejected">Rejected</option>
-                </select>
+            <div class="qr-field-grid">
+                <div class="qr-field">
+                    <label class="settings-label">Status</label>
+                    <select id="ar_status" class="settings-input">
+                        <option value="new">New</option>
+                        <option value="reviewing">Reviewing</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="hired">Hired</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="qr-field">
+                    <label class="settings-label">Offered Hourly Rate ($) <span style="font-weight:400;color:#aaa;">— included in hire email</span></label>
+                    <input type="number" id="ar_offered_rate" class="settings-input" step="0.01" min="0" placeholder="e.g. 19.00">
+                </div>
             </div>
         </div>
         <div class="qr-footer">
@@ -1971,6 +2767,100 @@ boot();
             <button class="btn btn-outline" onclick="closeAppModal()">Cancel</button>
             <button class="btn btn-outline" onclick="submitAppStatus(document.getElementById('ar_status').value)">&#128190; Save Status</button>
             <button class="btn btn-primary" id="ar_hire_btn" onclick="hireApplicant()">&#10003; Hire &amp; Send Email</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Weekly Schedule Modal ── -->
+<div id="weeklyScheduleModal" class="qr-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="qr-box" style="max-width:780px;width:95%;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="qr-header" style="flex-shrink:0;">
+            <div>
+                <h2 class="qr-title" id="wsCrewName"></h2>
+                <div style="font-size:13px;color:#888;margin-top:2px;">Weekly Schedule &nbsp;·&nbsp; <span id="wsWeekLabel"></span></div>
+            </div>
+            <button class="qr-close" onclick="document.getElementById('weeklyScheduleModal').style.display='none'">&times;</button>
+        </div>
+        <div id="wsBody" style="overflow-y:auto;flex:1;padding:0 4px 8px;"></div>
+        <div class="qr-footer" style="flex-shrink:0;" id="wsFooter">
+            <button class="btn btn-outline" onclick="document.getElementById('weeklyScheduleModal').style.display='none'">Close</button>
+            <button class="btn btn-outline" onclick="window.print()">&#128424; Print</button>
+            <button class="btn btn-primary" id="wsSendBtn">&#128231; Send to Crew</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Create Crew Modal ── -->
+<div id="createCrewModal" class="qr-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="qr-box" style="max-width:420px;">
+        <div class="qr-header" style="background:linear-gradient(135deg,#1b3a2f,#3a6642);">
+            <h3 class="qr-title">&#128101; Create Crew</h3>
+            <button class="qr-close" onclick="document.getElementById('createCrewModal').style.display='none'">&times;</button>
+        </div>
+        <div class="qr-body">
+            <div class="qr-field">
+                <label class="settings-label">Crew Name *</label>
+                <input type="text" id="newCrewName" class="settings-input" placeholder="e.g. Alpha Team">
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button class="btn btn-outline" onclick="document.getElementById('createCrewModal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="createCrew()">Create Crew</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Crew Detail Modal ── -->
+<div id="crewDetailModal" class="qr-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="qr-box" style="max-width:820px;">
+        <div class="qr-header" style="background:linear-gradient(135deg,#1b3a2f,#3a6642);">
+            <div>
+                <h3 class="qr-title" id="cdm_title">Crew Detail</h3>
+                <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:2px;" id="cdm_id"></div>
+            </div>
+            <button class="qr-close" onclick="document.getElementById('crewDetailModal').style.display='none'">&times;</button>
+        </div>
+        <div class="qr-body" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <!-- Left: info + members -->
+            <div>
+                <p class="qr-section-title">Crew Info</p>
+                <div class="qr-field" style="margin-bottom:12px;">
+                    <label class="settings-label">Name</label>
+                    <input type="text" id="cdm_name" class="settings-input">
+                </div>
+                <div class="qr-field" style="margin-bottom:16px;">
+                    <label class="settings-label">Status</label>
+                    <select id="cdm_status" class="settings-input">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="qr-divider"></div>
+                <p class="qr-section-title">Members <span id="cdm_member_count" style="font-weight:400;color:#aaa;text-transform:none;letter-spacing:0;"></span></p>
+                <div id="cdm_members" style="margin-bottom:12px;min-height:40px;"></div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <select id="cdm_add_emp" class="settings-input" style="flex:1;">
+                        <option value="">— Add employee —</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="crewAddMember()">Add</button>
+                </div>
+            </div>
+            <!-- Right: assigned customers -->
+            <div>
+                <p class="qr-section-title">Assigned Services <span id="cdm_cust_count" style="font-weight:400;color:#aaa;text-transform:none;letter-spacing:0;"></span></p>
+                <div id="cdm_customers" style="margin-bottom:12px;min-height:40px;"></div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <select id="cdm_add_cust" class="settings-input" style="flex:1;">
+                        <option value="">— Assign customer —</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="crewAssignCustomer()">Assign</button>
+                </div>
+            </div>
+        </div>
+        <div class="qr-footer">
+            <button class="btn btn-danger" style="margin-right:auto;" onclick="crewDelete()">&#128465; Delete</button>
+            <button class="btn btn-outline" onclick="document.getElementById('crewDetailModal').style.display='none'">Close</button>
+            <button class="btn btn-primary" onclick="crewSaveInfo()">&#10003; Save</button>
         </div>
     </div>
 </div>
@@ -1985,7 +2875,7 @@ boot();
         <div class="qr-body">
             <p class="qr-section-title">Details <span class="qr-hint">(editable)</span></p>
             <div class="qr-field-grid">
-                <div class="qr-field"><label class="settings-label">Employee ID</label><input type="text" id="editEmpId" class="settings-input" placeholder="EMP-001"></div>
+                <div class="qr-field"><label class="settings-label">Employee ID</label><input type="text" id="editEmpId" class="settings-input" placeholder="VLL-000001"></div>
                 <div class="qr-field"><label class="settings-label">Full Name</label><input type="text" id="editEmpName" class="settings-input"></div>
                 <div class="qr-field"><label class="settings-label">Email</label><input type="email" id="editEmpEmail" class="settings-input"></div>
                 <div class="qr-field"><label class="settings-label">Phone</label><input type="tel" id="editEmpPhone" class="settings-input"></div>

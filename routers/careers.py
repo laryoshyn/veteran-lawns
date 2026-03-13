@@ -34,6 +34,7 @@ class JobApplicationRequest(BaseModel):
     requires_sponsorship: bool
     work_auth_status: str
     availability_date: str | None = None
+    desired_hourly_rate: float | None = None
     message: str | None = None
 
 
@@ -72,6 +73,7 @@ async def apply_for_job(
         requires_sponsorship=application.requires_sponsorship,
         work_auth_status=application.work_auth_status,
         availability_date=availability,
+        desired_hourly_rate=application.desired_hourly_rate,
         message=application.message,
     )
     db.add(job_app)
@@ -119,6 +121,7 @@ async def get_applications(
             "requires_sponsorship": a.requires_sponsorship,
             "work_auth_status": a.work_auth_status,
             "availability_date": a.availability_date.isoformat() if a.availability_date else None,
+            "desired_hourly_rate": a.desired_hourly_rate,
             "message": a.message,
             "status": a.status,
             "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -162,8 +165,9 @@ async def hire_applicant(
     application_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
+    offered_hourly_rate: float | None = None,
 ):
-    """Accept applicant as employee, mark hired, send congratulation email."""
+    """Accept applicant as employee, mark hired, send congratulation email with offered rate."""
     result = await db.execute(select(JobApplication).where(JobApplication.id == application_id))
     app = result.scalar_one_or_none()
     if not app:
@@ -178,6 +182,7 @@ async def hire_applicant(
         position=app.position,
         employment_type="full_time",
         hire_date=date_type.today(),
+        hourly_rate=offered_hourly_rate,
         authorized_to_work=app.authorized_to_work,
         requires_sponsorship=app.requires_sponsorship,
         work_auth_status=app.work_auth_status,
@@ -190,7 +195,8 @@ async def hire_applicant(
     email_sent = await send_hire_congratulation_email(
         to_email=app.email,
         applicant_name=app.name,
-        position_label=_POSITION_LABELS.get(app.position, app.position),
+        position_label=_POSITION_LABELS.get(app.position, app.position) or app.position,
+        offered_hourly_rate=offered_hourly_rate,
     )
-    logger.info(f"Admin {current_user.email} hired applicant {application_id} → employee {emp.id}, email_sent={email_sent}")
+    logger.info(f"Admin {current_user.email} hired applicant {application_id} → employee {emp.id}, rate={offered_hourly_rate}, email_sent={email_sent}")
     return {"employee_id": emp.id, "email_sent": email_sent}

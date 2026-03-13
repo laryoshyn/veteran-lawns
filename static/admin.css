@@ -1184,6 +1184,249 @@ body.admin-body::before {
     display: flex; gap: 10px; justify-content: flex-end;
 }
 
+/* ── Crew Management ── */
+
+/* New full-width 3-column card */
+.crew-card2 {
+    background: #fff;
+    border: 1px solid #e4e8e0;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+}
+
+.crew-card2:hover {
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+.crew-card2--inactive {
+    opacity: 0.55;
+}
+
+.crew-card2-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #1b3a2f 0%, #2d5a40 100%);
+    color: #fff;
+}
+
+.crew-card2-title-block {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.crew-card2-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.crew-card2-id {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    font-family: monospace;
+}
+
+.crew-month-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px;
+    padding: 1px 9px;
+    white-space: nowrap;
+}
+
+.crew-card2-header .status-badge {
+    font-size: 11px;
+}
+
+.crew-card2-header .btn-outline {
+    border-color: rgba(255,255,255,0.4);
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    padding: 4px 12px;
+    font-size: 12px;
+}
+
+.crew-card2-header .btn-outline:hover {
+    background: rgba(255,255,255,0.22);
+}
+
+.crew-card2-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.crew-col2 {
+    padding: 14px 18px;
+    border-right: 1px solid #f0f0f0;
+}
+
+.crew-col2:last-child {
+    border-right: none;
+}
+
+.crew-col2-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.crew-col2-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+}
+
+.cc-row-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-row-sub {
+    font-size: 11px;
+    color: #aaa;
+    white-space: nowrap;
+}
+
+.cc-empty {
+    font-size: 13px;
+    color: #bbb;
+    font-style: italic;
+}
+
+.cc-date-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1b3a2f;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.crew-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--forest);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+}
+
+.crew-chip--more {
+    background: #e2e8f0;
+    color: #555;
+}
+
+.crew-chip--sm {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+.crew-chip--cust {
+    background: #2563eb;
+}
+
+.crew-member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.crew-member-row:last-child {
+    border-bottom: none;
+}
+
+.btn-icon-danger {
+    background: none;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.btn-icon-danger:hover {
+    background: #fee2e2;
+}
+
+.btn-icon-sm {
+    background: none;
+    border: 1px solid #d1d5db;
+    color: #555;
+    cursor: pointer;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    line-height: 1.2;
+    display: block;
+}
+.btn-icon-sm:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+.btn-icon-sm:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.cal-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.cal-dot-row {
+    display: flex;
+    align-items: center;
+    margin-top: 3px;
+    min-height: 10px;
+}
+
 /* ── Edit Customer Modal extras ── */
 .ec-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ec-info-row { display: flex; flex-direction: column; gap: 3px; }
@@ -1233,4 +1476,49 @@ body.admin-body::before {
 
 .paychex-header {
     background: linear-gradient(135deg, #c62828 0%, #ef5350 100%);
+}
+
+/* ── Weekly Schedule Modal ── */
+.ws-day-block {
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ws-day-header {
+    background: #1b3a2f;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 16px;
+}
+
+.ws-map-container {
+    height: 300px;
+    margin: 0;
+    border-top: 1px solid #e5e7eb;
+    position: relative;
+}
+
+
+/* ── Print styles ── */
+@media print {
+    body > *:not(#weeklyScheduleModal) { display: none !important; }
+    #weeklyScheduleModal {
+        position: static !important;
+        display: block !important;
+        background: none !important;
+    }
+    #weeklyScheduleModal .qr-box {
+        box-shadow: none !important;
+        max-height: none !important;
+        border: none !important;
+        width: 100% !important;
+    }
+    #wsFooter { display: none !important; }
+    .qr-close { display: none !important; }
+    .ws-day-block { break-inside: avoid; margin-bottom: 32px; }
+    .ws-map-container { height: 260px; }
+    .leaflet-control-zoom { display: none !important; }
 }

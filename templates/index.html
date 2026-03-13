@@ -138,6 +138,7 @@
                 <div class="form-group">
                     <label for="street_address">Street Address *</label>
                     <input type="text" id="street_address" name="street_address" required placeholder="123 Main Street">
+                    <span id="addressError" style="display:none;color:#dc2626;font-size:13px;margin-top:4px;">&#9888; Address not found. Please enter a valid street address.</span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -172,7 +173,7 @@
                 </div>
                 <div class="result-body">
                     <div class="result-row">
-                        <span>Property Size:</span>
+                        <span>Estimated Grass Area:</span>
                         <span id="resultActualSize">-</span> acres
                     </div>
                     <div class="result-row verification" id="verificationRow">
@@ -289,6 +290,12 @@
                     <div class="form-group">
                         <label for="app_availability">Available Start Date</label>
                         <input type="date" id="app_availability" name="availability_date">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="app_hourly_rate">Desired Hourly Rate ($)</label>
+                        <input type="number" id="app_hourly_rate" name="desired_hourly_rate" step="0.01" min="0" placeholder="e.g. 18.00">
                     </div>
                 </div>
                 <div class="form-group">
@@ -451,22 +458,75 @@ function selectService(type) {
     }
 }
 
+const MAPBOX_TOKEN = {{ mapbox_api_key | tojson }};
+
+document.getElementById('street_address').addEventListener('input', () => {
+    document.getElementById('addressError').style.display = 'none';
+});
+
+async function validateAddress(street, city, zip) {
+    if (!MAPBOX_TOKEN) return true; // skip if no token
+    const query = encodeURIComponent(`${street}, ${city}, MD ${zip}`);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=address&country=US`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.features || data.features.length === 0) return false;
+        const f = data.features[0];
+        // Must be an address-level result with high confidence
+        if (f.relevance < 0.8) return false;
+        if (!f.place_type || !f.place_type.includes('address')) return false;
+        // House number must match
+        const inputNum = street.trim().match(/^\d+/);
+        if (inputNum && !(f.place_name || '').startsWith(inputNum[0])) return false;
+        // Extract city and zip from the context array
+        const ctx = f.context || [];
+        const resultZip = (ctx.find(c => c.id.startsWith('postcode')) || {}).text || '';
+        const resultCity = (ctx.find(c => c.id.startsWith('place')) || {}).text || '';
+        // Zip must match exactly
+        if (resultZip && resultZip !== zip.trim()) return false;
+        // City must match (case-insensitive)
+        if (resultCity && resultCity.toLowerCase() !== city.trim().toLowerCase()) return false;
+        return true;
+    } catch (e) {
+        return true; // on network error, allow form to proceed
+    }
+}
+
 // ─── Quote form submit ─────────────────────────────────────────────────────
 document.getElementById('quoteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
+    const addressError = document.getElementById('addressError');
+    addressError.style.display = 'none';
     submitBtn.disabled = true;
-    btnText.textContent = 'Getting Your Quote...';
+    btnText.textContent = 'Verifying Address...';
     btnLoader.style.display = 'inline-block';
+
+    const street = document.getElementById('street_address').value;
+    const city = document.getElementById('city').value;
+    const zip = document.getElementById('zipcode').value;
+
+    const addressValid = await validateAddress(street, city, zip);
+    if (!addressValid) {
+        addressError.style.display = 'block';
+        document.getElementById('street_address').focus();
+        submitBtn.disabled = false;
+        btnText.textContent = 'Get My Free Quote';
+        btnLoader.style.display = 'none';
+        return;
+    }
+
+    btnText.textContent = 'Getting Your Quote...';
 
     const formData = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
-        street_address: document.getElementById('street_address').value,
-        city: document.getElementById('city').value,
-        zipcode: document.getElementById('zipcode').value,
+        street_address: street,
+        city: city,
+        zipcode: zip,
         phone: document.getElementById('phone').value,
         claimed_size: parseFloat(document.getElementById('claimed_size').value)
     };
@@ -497,7 +557,7 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
             }
             const verifiedEl = document.getElementById('sizeVerified');
             if (result.size_verified) {
-                verifiedEl.innerHTML = '<span class="verified">&#10003; Size verified with county records</span>';
+                verifiedEl.innerHTML = '<span class="verified">&#10003; Size verified</span>';
             } else {
                 verifiedEl.innerHTML = '<span class="unverified">Based on your estimate</span>';
             }
@@ -541,6 +601,7 @@ document.getElementById('applicationForm').addEventListener('submit', async (e) 
         requires_sponsorship: document.getElementById('app_sponsorship').value === 'true',
         work_auth_status: document.getElementById('app_work_auth_status').value,
         availability_date: document.getElementById('app_availability').value || null,
+        desired_hourly_rate: document.getElementById('app_hourly_rate').value ? parseFloat(document.getElementById('app_hourly_rate').value) : null,
         message: document.getElementById('app_message').value || null,
     };
 
