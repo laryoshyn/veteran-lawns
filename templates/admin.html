@@ -425,7 +425,7 @@
                         </div>
                         <div class="settings-field">
                             <label class="settings-label">&#128222; Public Phone</label>
-                            <input type="tel" id="biz_phone" class="settings-input" placeholder="(410) 555-1234">
+                            <input type="tel" id="biz_phone" class="settings-input" placeholder="(443) 567-1977">
                         </div>
                     </div>
                     <div class="settings-field-row">
@@ -1739,8 +1739,14 @@ async function crewAssignCustomer() {
 
 async function crewRemoveCustomer(custId) {
     const res = await fetch(`/crews/${_currentCrewId}/customers/${custId}`, {method:'DELETE', headers});
-    if (res.ok) { showToast('Customer unassigned'); await _refreshCurrentCrew(); await loadCrewSupportData(); _populateCustDropdown(_crewsCache.find(c=>c.id===_currentCrewId)); }
-    else { const e = await res.json(); alert(e.detail || 'Failed'); }
+    if (res.ok) {
+        showToast('Customer unassigned');
+        await _refreshCurrentCrew();
+        await loadCrewSupportData();
+        _populateCustDropdown(_crewsCache.find(c=>c.id===_currentCrewId));
+        await loadCrewCalendarData();
+        renderCrewCalendar();
+    } else { const e = await res.json(); alert(e.detail || 'Failed'); }
 }
 
 async function crewSaveInfo() {
@@ -2027,35 +2033,41 @@ async function renderCrewCalendar() {
     document.getElementById('crewCalTitle').textContent = `${months[_crewCalMonth]} ${_crewCalYear}`;
 
     const grid = document.getElementById('crewCalGrid');
-    // Remove day cells (keep headers = first 7)
     while (grid.children.length > 7) grid.removeChild(grid.lastChild);
 
     const firstDay = new Date(_crewCalYear, _crewCalMonth, 1).getDay();
     const daysInMonth = new Date(_crewCalYear, _crewCalMonth + 1, 0).getDate();
     const today = new Date(); today.setHours(0,0,0,0);
 
-    // Blank leading cells
     for (let i = 0; i < firstDay; i++) {
         const blank = document.createElement('div');
-        blank.className = 'calendar-day calendar-day--other';
+        blank.className = 'calendar-day calendar-day-empty';
         grid.appendChild(blank);
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
         const date = new Date(_crewCalYear, _crewCalMonth, d);
         const services = _crewCalServices.filter(s => _serviceOccursOn(s, date));
-        const assigned = services.filter(s => s.crew_id);
-        const unassigned = services.filter(s => !s.crew_id);
 
         const cell = document.createElement('div');
-        cell.className = 'calendar-day' + (date.getTime() === today.getTime() ? ' calendar-day--today' : '');
+        cell.className = 'calendar-day';
+        if (date.getTime() === today.getTime()) cell.classList.add('calendar-day-today');
 
-        let dots = '';
-        if (assigned.length) dots += `<span class="cal-dot" style="background:#166534;" title="${assigned.length} assigned">${assigned.length}</span>`;
-        if (unassigned.length) dots += `<span class="cal-dot" style="background:#f59e0b;" title="${unassigned.length} unassigned">${unassigned.length}</span>`;
+        const num = document.createElement('span');
+        num.className = 'day-number';
+        num.textContent = d;
+        cell.appendChild(num);
 
-        cell.innerHTML = `<span class="calendar-day-num">${d}</span><div class="cal-dot-row">${dots}</div>`;
         if (services.length) {
+            cell.classList.add('has-events');
+            services.forEach(s => {
+                const dot = document.createElement('div');
+                dot.className = 'calendar-event';
+                dot.style.color = s.crew_id ? '#166534' : '#f59e0b';
+                dot.title = `${s.name} — ${s.address}`;
+                dot.innerHTML = '&#127793;';
+                cell.appendChild(dot);
+            });
             const dateStr = date.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
             cell.onclick = () => showCrewDayDetail(dateStr, services);
             cell.style.cursor = 'pointer';
@@ -2066,16 +2078,6 @@ async function renderCrewCalendar() {
 
 function showCrewDayDetail(dateStr, services) {
     document.getElementById('crewDayTitle').textContent = dateStr;
-    const activeCrews = _crewsCache.filter(c => c.status === 'active');
-    // Count how many services on this day each crew already has
-    const crewServiceCount = {};
-    services.forEach(s => { if (s.crew_id) crewServiceCount[s.crew_id] = (crewServiceCount[s.crew_id] || 0) + 1; });
-    const crewOptions = `<option value="">— Unassigned —</option>` +
-        activeCrews.map(c => {
-            const n = crewServiceCount[c.id] || 0;
-            const label = n > 0 ? `${c.name} (${n} service${n > 1 ? 's' : ''})` : c.name;
-            return `<option value="${c.id}">${label}</option>`;
-        }).join('');
 
     const unassigned = services.filter(s => !s.crew_id);
     const assigned = services.filter(s => s.crew_id);
@@ -2083,24 +2085,19 @@ function showCrewDayDetail(dateStr, services) {
 
     document.getElementById('crewDayContent').innerHTML = sorted.map(s => {
         const isUnassigned = !s.crew_id;
+        const crew = _crewsCache.find(c => c.id === s.crew_id);
+        const crewLabel = crew ? crew.name : 'Unassigned';
+        const freq = (s.service_frequency || '').replace(/_/g, ' ');
         return `
-        <div class="day-detail-row" id="ddr-${s.id}" style="border-left:3px solid ${isUnassigned ? '#f59e0b' : '#166534'};padding-left:10px;margin-bottom:8px;border-radius:6px;${isUnassigned ? 'background:#fff7ed;' : ''}">
-            <div style="font-weight:600;font-size:14px;padding-top:8px;">${s.name}</div>
-            <div style="font-size:12px;color:#666;margin-bottom:6px;">${s.address} · ${(s.service_frequency||'').replace(/_/g,' ')}</div>
-            <div style="display:flex;gap:8px;align-items:center;padding-bottom:8px;">
-                <select class="settings-input" style="flex:1;font-size:12px;padding:4px 8px;height:30px;"
-                    onchange="assignCrewFromCalendar(${s.id}, this.value, this)">
-                    ${crewOptions}
-                </select>
+        <div style="border-left:3px solid ${isUnassigned ? '#f59e0b' : '#166534'};padding:8px 10px;margin-bottom:8px;border-radius:6px;${isUnassigned ? 'background:#fff7ed;' : ''}">
+            <div style="font-weight:600;font-size:14px;">&#127793; ${s.name}</div>
+            <div style="font-size:12px;color:#666;margin-top:2px;">&#128205; ${s.address}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">
+                <span style="color:${isUnassigned ? '#b45309' : '#166534'};font-weight:600;">${crewLabel}</span>
+                ${freq ? `&nbsp;·&nbsp;${freq}` : ''}
             </div>
         </div>`;
     }).join('');
-
-    // Set current crew selection for each service
-    services.forEach(s => {
-        const sel = document.querySelector(`#ddr-${s.id} select`);
-        if (sel) sel.value = s.crew_id || '';
-    });
 
     document.getElementById('crewDayPanel').style.display = '';
 }
@@ -2128,6 +2125,38 @@ async function assignCrewFromCalendar(customerId, crewId, selectEl) {
             const e = await res.json();
             alert(e.detail || 'Failed');
             selectEl.value = selectEl.dataset.prev || '';
+        }
+    } finally {
+        selectEl.disabled = false;
+    }
+}
+
+async function changeServiceWeekday(customerId, weekdayStr, selectEl) {
+    if (weekdayStr === '') return;
+    const targetDay = parseInt(weekdayStr); // 0=Sun … 6=Sat
+    selectEl.disabled = true;
+    try {
+        // Find current start date from cache
+        let startDate = null;
+        for (const crew of _crewsCache) {
+            const cust = crew.customers.find(c => c.id === customerId);
+            if (cust?.service_start_date) { startDate = new Date(cust.service_start_date + 'T12:00:00'); break; }
+        }
+        if (!startDate) { alert('No start date found for this customer.'); return; }
+        // Shift start date to nearest future occurrence of targetDay
+        const diff = (targetDay - startDate.getDay() + 7) % 7;
+        const newDate = new Date(startDate);
+        newDate.setDate(newDate.getDate() + (diff === 0 ? 0 : diff));
+        const iso = newDate.toISOString().split('T')[0];
+        const params = new URLSearchParams({service_start_date: iso});
+        const res = await fetch(`/dashboard/admin/customers/${customerId}?${params}`, {method: 'PATCH', headers});
+        if (res.ok) {
+            showToast('Service day updated');
+            await loadCrewCalendarData();
+            renderCrewCalendar();
+        } else {
+            const e = await res.json();
+            alert(e.detail || 'Failed to update service day');
         }
     } finally {
         selectEl.disabled = false;
@@ -2205,7 +2234,7 @@ function showAddEmployeeModal() {
                     <div class="qr-field"><label class="settings-label">Employee ID</label><input type="text" id="newEmpId" class="settings-input" placeholder="Auto-generated (VLL-XXXXXX)"></div>
                     <div class="qr-field"><label class="settings-label">Full Name *</label><input type="text" id="newEmpName" class="settings-input" placeholder="Jane Smith"></div>
                     <div class="qr-field"><label class="settings-label">Email *</label><input type="email" id="newEmpEmail" class="settings-input" placeholder="jane@example.com"></div>
-                    <div class="qr-field"><label class="settings-label">Phone *</label><input type="tel" id="newEmpPhone" class="settings-input" placeholder="(410) 555-1234"></div>
+                    <div class="qr-field"><label class="settings-label">Phone *</label><input type="tel" id="newEmpPhone" class="settings-input" placeholder="(443) 567-1977"></div>
                     <div class="qr-field"><label class="settings-label">Position *</label>
                         <select id="newEmpPosition" class="settings-input">
                             <option value="lawn_service">Lawn Service</option>

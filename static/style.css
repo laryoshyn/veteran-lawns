@@ -317,8 +317,7 @@ h1, h2, h3, h4 {
 }
 
 .hero-badge::before {
-    content: '★';
-    font-size: 0.75rem;
+    content: '';
 }
 
 .hero h1 {

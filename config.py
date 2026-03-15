@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # Stripe
     stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
     stripe_webhook_secret: str = ""
 
     # FieldRoutes (optional)

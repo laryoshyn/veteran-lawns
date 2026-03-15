@@ -6,12 +6,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
 from database import get_db
-from models import Employee, User
+from models import Employee, User, crew_members
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +194,10 @@ async def update_employee(
         if emp_status not in VALID_STATUSES:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
         emp.status = emp_status
+        # Remove from all crews if suspended (inactive) or terminated
+        if emp_status in {"inactive", "terminated"}:
+            await db.execute(delete(crew_members).where(crew_members.c.employee_id == employee_id))
+            logger.info(f"Employee {employee_id} removed from all crews due to status: {emp_status}")
     if authorized_to_work is not None:
         emp.authorized_to_work = authorized_to_work
     if requires_sponsorship is not None:

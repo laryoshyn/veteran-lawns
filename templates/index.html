@@ -20,7 +20,7 @@
 
             <!-- LAWN mode content -->
             <div class="hc-lawn">
-                <div class="hero-badge">&#9733; Veteran Owned &amp; Operated</div>
+                <div class="hero-badge">&#9733; Veteran Owned &amp; Operated &#9733;</div>
                 <h1>Professional Lawn Care<br>You Can Trust</h1>
                 <p>Serving Harford County, Maryland with pride.<br>Get your free instant quote in seconds.</p>
                 <a href="#quote-form" class="btn btn-hero">Get Free Quote</a>
@@ -139,6 +139,7 @@
                     <label for="street_address">Street Address *</label>
                     <input type="text" id="street_address" name="street_address" required placeholder="123 Main Street">
                     <span id="addressError" style="display:none;color:#dc2626;font-size:13px;margin-top:4px;">&#9888; Address not found. Please enter a valid street address.</span>
+                    <span id="rangeError" style="display:none;color:#dc2626;font-size:13px;margin-top:4px;">&#9888; Sorry, this address is outside our 60-mile service area from Bel Air, MD.</span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -153,14 +154,14 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="phone">Phone Number *</label>
-                        <input type="tel" id="phone" name="phone" required placeholder="(410) 555-1234">
+                        <input type="tel" id="phone" name="phone" required placeholder="(443) 567-1977">
                     </div>
                     <div class="form-group">
                         <label for="claimed_size">Estimated Lawn Size (acres) *</label>
                         <input type="number" id="claimed_size" name="claimed_size" step="0.1" min="0.1" max="10" required placeholder="0.5">
                     </div>
                 </div>
-                <p class="form-note">We verify property sizes with Harford County records for accurate pricing.</p>
+                <p class="form-note">We verify property sizes and grass area for accurate pricing.</p>
                 <button type="submit" class="btn btn-primary btn-large" id="submitBtn">
                     <span id="btnText">Get My Free Quote</span>
                     <span id="btnLoader" class="loader" style="display:none;"></span>
@@ -187,7 +188,7 @@
                 </div>
                 <div class="result-actions">
                     <p class="result-message">We've sent the quote details to your email. A team member will contact you within 24 hours to schedule your first service.</p>
-                    <a href="tel:+14105551234" class="btn btn-success btn-large">Call Now: (410) 555-1234</a>
+                    <a href="tel:+14435671977" class="btn btn-success btn-large">Call Now: (443) 567-1977</a>
                 </div>
             </div>
         </div>
@@ -244,7 +245,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="app_phone">Phone Number *</label>
-                        <input type="tel" id="app_phone" name="phone" required placeholder="(410) 555-1234">
+                        <input type="tel" id="app_phone" name="phone" required placeholder="(443) 567-1977">
                     </div>
                     <div class="form-group">
                         <label for="app_position">Position *</label>
@@ -319,7 +320,7 @@
                     </p>
                 </div>
                 <div class="result-actions">
-                    <a href="tel:+14105551234" class="btn btn-success btn-large">Questions? Call Us</a>
+                    <a href="tel:+14435671977" class="btn btn-success btn-large">Questions? Call Us</a>
                 </div>
             </div>
         </div>
@@ -462,32 +463,50 @@ const MAPBOX_TOKEN = {{ mapbox_api_key | tojson }};
 
 document.getElementById('street_address').addEventListener('input', () => {
     document.getElementById('addressError').style.display = 'none';
+    document.getElementById('rangeError').style.display = 'none';
 });
 
+// Bel Air, MD center coordinates [lon, lat]
+const BEL_AIR_CENTER = [-76.3483, 39.5357];
+const MAX_DRIVE_MILES = 60;
+const METERS_PER_MILE = 1609.344;
+
+// Returns {valid: bool, coords: [lon, lat] | null}
 async function validateAddress(street, city, zip) {
-    if (!MAPBOX_TOKEN) return true; // skip if no token
+    if (!MAPBOX_TOKEN) return {valid: true, coords: null};
     const query = encodeURIComponent(`${street}, ${city}, MD ${zip}`);
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=address&country=US`;
     try {
         const res = await fetch(url);
         const data = await res.json();
-        if (!data.features || data.features.length === 0) return false;
+        if (!data.features || data.features.length === 0) return {valid: false, coords: null};
         const f = data.features[0];
-        // Must be an address-level result with high confidence
-        if (f.relevance < 0.8) return false;
-        if (!f.place_type || !f.place_type.includes('address')) return false;
-        // House number must match
+        if (f.relevance < 0.8) return {valid: false, coords: null};
+        if (!f.place_type || !f.place_type.includes('address')) return {valid: false, coords: null};
         const inputNum = street.trim().match(/^\d+/);
-        if (inputNum && !(f.place_name || '').startsWith(inputNum[0])) return false;
-        // Extract city and zip from the context array
+        if (inputNum && !(f.place_name || '').startsWith(inputNum[0])) return {valid: false, coords: null};
         const ctx = f.context || [];
         const resultZip = (ctx.find(c => c.id.startsWith('postcode')) || {}).text || '';
         const resultCity = (ctx.find(c => c.id.startsWith('place')) || {}).text || '';
-        // Zip must match exactly
-        if (resultZip && resultZip !== zip.trim()) return false;
-        // City must match (case-insensitive)
-        if (resultCity && resultCity.toLowerCase() !== city.trim().toLowerCase()) return false;
-        return true;
+        if (resultZip && resultZip !== zip.trim()) return {valid: false, coords: null};
+        if (resultCity && resultCity.toLowerCase() !== city.trim().toLowerCase()) return {valid: false, coords: null};
+        return {valid: true, coords: f.center}; // [lon, lat]
+    } catch (e) {
+        return {valid: true, coords: null}; // on network error, allow form to proceed
+    }
+}
+
+async function checkDrivingDistance(coords) {
+    if (!MAPBOX_TOKEN || !coords) return true; // skip if no token or coords
+    const [lon, lat] = coords;
+    const [bLon, bLat] = BEL_AIR_CENTER;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${bLon},${bLat};${lon},${lat}?access_token=${MAPBOX_TOKEN}`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.routes || data.routes.length === 0) return true; // allow if no route found
+        const distanceMiles = data.routes[0].distance / METERS_PER_MILE;
+        return distanceMiles <= MAX_DRIVE_MILES;
     } catch (e) {
         return true; // on network error, allow form to proceed
     }
@@ -500,7 +519,9 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
     const addressError = document.getElementById('addressError');
+    const rangeError = document.getElementById('rangeError');
     addressError.style.display = 'none';
+    rangeError.style.display = 'none';
     submitBtn.disabled = true;
     btnText.textContent = 'Verifying Address...';
     btnLoader.style.display = 'inline-block';
@@ -509,9 +530,19 @@ document.getElementById('quoteForm').addEventListener('submit', async (e) => {
     const city = document.getElementById('city').value;
     const zip = document.getElementById('zipcode').value;
 
-    const addressValid = await validateAddress(street, city, zip);
+    const {valid: addressValid, coords} = await validateAddress(street, city, zip);
     if (!addressValid) {
         addressError.style.display = 'block';
+        document.getElementById('street_address').focus();
+        submitBtn.disabled = false;
+        btnText.textContent = 'Get My Free Quote';
+        btnLoader.style.display = 'none';
+        return;
+    }
+
+    const withinRange = await checkDrivingDistance(coords);
+    if (!withinRange) {
+        rangeError.style.display = 'block';
         document.getElementById('street_address').focus();
         submitBtn.disabled = false;
         btnText.textContent = 'Get My Free Quote';

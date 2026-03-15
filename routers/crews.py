@@ -356,6 +356,8 @@ class GeocodeRequest(BaseModel):
     addresses: list[str]
 
 
+
+
 @router.post("/geocode")
 async def geocode_addresses(
     body: GeocodeRequest,
